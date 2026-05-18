@@ -301,39 +301,61 @@ function enviarViaFetch(dados, successCb, failCb) {
 // ════════════════════════════════════════════════════════════════════
 function carregarMotoristas(onFim) {
   var biEl = document.getElementById('bi');
+
   var _aplicar = function(lista) {
-    if (lista && lista.length > 0) {
-      NM = lista; salvarMotoristasCache(NM);
-      if (biEl && biEl.value.trim().length > 0) biEl.dispatchEvent(new Event('input'));
+    NM = Array.isArray(lista) ? lista : [];
+
+    if (NM.length > 0) {
+      salvarMotoristasCache(NM);
+    }
+
+    if (biEl && biEl.value && biEl.value.trim().length > 0) {
+      setTimeout(function() {
+        biEl.dispatchEvent(new Event('input'));
+      }, 50);
     }
   };
+
   buscarMotoristasCache(function(cached) {
     if (cached && cached.length > 0) {
-      // Cache: UI imediata + atualiza em background
-      NM = cached;
-      if (onFim) onFim();
-      if (navigator.onLine) {
-        var ctrl = criarAbort(8000);
-        fetch(APP_URL + '?motoristas=1', { signal: ctrl.signal })
-          .then(function(r) { ctrl._clear(); return r.json(); })
-          .then(function(l) { _aplicar(l); })
-          .catch(function() { ctrl._clear(); });
+      NM = Array.isArray(cached) ? cached : [];
+
+      if (biEl && biEl.value && biEl.value.trim().length > 0) {
+        setTimeout(function() {
+          biEl.dispatchEvent(new Event('input'));
+        }, 50);
       }
-    } else {
-      // Sem cache: busca rede com timeout 5s
-      if (biEl) biEl.placeholder = 'Carregando nomes...';
-      var _done = function(lista) {
-        _aplicar(lista);
-        if (biEl) biEl.placeholder = 'Digite seu nome...';
-        if (onFim) onFim();
-      };
-      if (!navigator.onLine) { _done([]); return; }
-      var ctrl = criarAbort(5000);
-      fetch(APP_URL + '?motoristas=1', { signal: ctrl.signal })
-        .then(function(r) { ctrl._clear(); return r.json(); })
-        .then(function(l) { _done(l); })
-        .catch(function() { ctrl._clear(); _done([]); });
+
+      if (onFim) onFim();
+
+      if (navigator.onLine) {
+        var ctrlBg = criarAbort(8000);
+        fetch(APP_URL + '?motoristas=1', { signal: ctrlBg.signal })
+          .then(function(r) { ctrlBg._clear(); return r.json(); })
+          .then(function(l) { _aplicar(l); })
+          .catch(function() { ctrlBg._clear(); });
+      }
+      return;
     }
+
+    if (biEl) biEl.placeholder = 'Carregando nomes...';
+
+    var _done = function(lista) {
+      _aplicar(lista);
+      if (biEl) biEl.placeholder = 'Digite seu nome...';
+      if (onFim) onFim();
+    };
+
+    if (!navigator.onLine) {
+      _done([]);
+      return;
+    }
+
+    var ctrl = criarAbort(5000);
+    fetch(APP_URL + '?motoristas=1', { signal: ctrl.signal })
+      .then(function(r) { ctrl._clear(); return r.json(); })
+      .then(function(l) { _done(l); })
+      .catch(function() { ctrl._clear(); _done([]); });
   });
 }
 
@@ -887,29 +909,6 @@ window.onload=function(){
       navigator.serviceWorker.register('./sw.js', { scope: './' })
         .then(function(reg) { reg.update(); })
         .catch(function() {});
-    } catch(e) {}
-  }
-            });
-          });
-        } catch(e) {}
-      }
-
-      navigator.serviceWorker.register(_swUrl, { scope: './' })
-        .then(function(reg) {
-          reg.update();
-          // Cacheia assim que o SW estiver pronto
-          navigator.serviceWorker.ready.then(_cachearPaginaAtual);
-        })
-        .catch(function() {});
-
-      // Recacheia também ao ganhar foco (garante cache atualizado após uso online)
-      window.addEventListener('focus', function() {
-        if (navigator.onLine) {
-          navigator.serviceWorker.ready.then(function() {
-            setTimeout(_cachearPaginaAtual, 500);
-          });
-        }
-      });
     } catch(e) {}
   }
   var n='',d='',h=new Date().toDateString();
