@@ -8,15 +8,15 @@
   "theme_color": "#1a56db",
   "orientation": "portrait",
   "icons": [
-  {
-    "src": "./icon-192.png",
-    "sizes": "192x192",
-    "type": "image/png"
-  },
-  {
-    "src": "./icon-512.png",
-    "sizes": "512x512",
-    "type": "image/png"
-  }
-]
+    {
+      "src": "https://www.google.com/s2/favicons?domain=script.google.com&sz=192",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://www.google.com/s2/favicons?domain=script.google.com&sz=512",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
 }
