@@ -299,6 +299,27 @@ function enviarViaFetch(dados, successCb, failCb) {
 // ════════════════════════════════════════════════════════════════════
 // carregarMotoristas — busca lista com fallback fetch → cache local
 // ════════════════════════════════════════════════════════════════════
+function buscarMotoristasRede(cb) {
+  var callbackName = 'cbMotoristas_' + Date.now();
+
+  window[callbackName] = function(lista) {
+    delete window[callbackName];
+    if (script && script.parentNode) script.parentNode.removeChild(script);
+    cb(Array.isArray(lista) ? lista : []);
+  };
+
+  var script = document.createElement('script');
+  script.src = APP_URL + '?motoristas=1&callback=' + callbackName;
+
+  script.onerror = function() {
+    delete window[callbackName];
+    if (script && script.parentNode) script.parentNode.removeChild(script);
+    cb([]);
+  };
+
+  document.body.appendChild(script);
+}
+
 function carregarMotoristas(onFim) {
   var biEl = document.getElementById('bi');
 
@@ -318,44 +339,33 @@ function carregarMotoristas(onFim) {
 
   buscarMotoristasCache(function(cached) {
     if (cached && cached.length > 0) {
-      NM = Array.isArray(cached) ? cached : [];
-
-      if (biEl && biEl.value && biEl.value.trim().length > 0) {
-        setTimeout(function() {
-          biEl.dispatchEvent(new Event('input'));
-        }, 50);
-      }
+      NM = cached;
 
       if (onFim) onFim();
 
       if (navigator.onLine) {
-        var ctrlBg = criarAbort(8000);
-        fetch(APP_URL + '?motoristas=1', { signal: ctrlBg.signal })
-          .then(function(r) { ctrlBg._clear(); return r.json(); })
-          .then(function(l) { _aplicar(l); })
-          .catch(function() { ctrlBg._clear(); });
+        buscarMotoristasRede(function(lista) {
+          _aplicar(lista);
+        });
       }
-      return;
+
+    } else {
+      if (biEl) biEl.placeholder = 'Carregando nomes...';
+
+      var _done = function(lista) {
+        _aplicar(lista);
+
+        if (biEl) biEl.placeholder = 'Digite seu nome...';
+        if (onFim) onFim();
+      };
+
+      if (!navigator.onLine) {
+        _done([]);
+        return;
+      }
+
+      buscarMotoristasRede(_done);
     }
-
-    if (biEl) biEl.placeholder = 'Carregando nomes...';
-
-    var _done = function(lista) {
-      _aplicar(lista);
-      if (biEl) biEl.placeholder = 'Digite seu nome...';
-      if (onFim) onFim();
-    };
-
-    if (!navigator.onLine) {
-      _done([]);
-      return;
-    }
-
-    var ctrl = criarAbort(5000);
-    fetch(APP_URL + '?motoristas=1', { signal: ctrl.signal })
-      .then(function(r) { ctrl._clear(); return r.json(); })
-      .then(function(l) { _done(l); })
-      .catch(function() { ctrl._clear(); _done([]); });
   });
 }
 
