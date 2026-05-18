@@ -249,20 +249,55 @@ body{padding-top:32px}
 // ════════════════════════════════════════════════════════════════════
 // APP_URL — injetada pelo GAS via HtmlTemplate. Fica cacheada no SW.
 // ════════════════════════════════════════════════════════════════════
-var APP_URL = 'https://script.google.com/macros/s/AKfycbxji_CyMZEcmnIXBD8sH_S_ig1yLYVxIzHDVvkPLKktP_ElSMM15sele4XVY4DR5cKXqA/exec'; // ← substitua pela URL real do seu GAS
+var APP_URL = 'COLE_A_URL_DO_GAS_AQUI'; // ← substitua pela URL real do seu GAS
 
 // ════════════════════════════════════════════════════════════════════
 // enviarViaFetch — fallback quando google.script.run não está disponível
 // (service worker cache, Capacitor APK, etc.)
 // ════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════
+// HELPERS: AbortController com timeout + teste real de conectividade
+//
+// FIX ANDROID: navigator.onLine retorna true mesmo sem sinal real.
+// fetch() sem AbortController trava indefinidamente no Chrome Android,
+// bloqueando pointer-events (bug do Chrome: página parece "carregando").
+// ════════════════════════════════════════════════════════════════════
+function criarAbort(ms) {
+  // Cria um AbortController que cancela automaticamente após `ms` milissegundos
+  var ctrl = new AbortController();
+  var timer = setTimeout(function() { ctrl.abort(); }, ms || 8000);
+  ctrl._clear = function() { clearTimeout(timer); };
+  return ctrl;
+}
+
+// Testa conectividade REAL (não confia só no navigator.onLine)
+// Usa ?connectivity=1 — o sw.js passa esse parâmetro direto pra rede (sem cache).
+// Se offline, o fetch falha em até 3s; se online, retorna ok.
+var _conectividadeOk = false;
+function testarConectividade(cb) {
+  if (!navigator.onLine) { _conectividadeOk = false; cb(false); return; }
+  var ctrl = criarAbort(3000);
+  fetch('./manifest.json?connectivity=1', {
+    method: 'HEAD',
+    cache: 'no-store',
+    signal: ctrl.signal
+  })
+  .then(function(r) { ctrl._clear(); _conectividadeOk = r.ok; cb(r.ok); })
+  .catch(function() { ctrl._clear(); _conectividadeOk = false; cb(false); });
+}
+
 function enviarViaFetch(dados, successCb, failCb) {
   if (!APP_URL) { if(failCb) failCb('Sem URL'); return; }
+  // AbortController de 20s: evita que o fetch trave indefinidamente no Android
+  var ctrl = criarAbort(20000);
   fetch(APP_URL, {
     method: 'POST',
     body: JSON.stringify(dados),
-    redirect: 'follow'
+    redirect: 'follow',
+    signal: ctrl.signal
   })
   .then(function(res) {
+    ctrl._clear();
     if (!res.ok) throw new Error('HTTP ' + res.status);
     return res.json();
   })
@@ -270,45 +305,77 @@ function enviarViaFetch(dados, successCb, failCb) {
     if (data && data.status === 'ok') { if(successCb) successCb(); }
     else { if(failCb) failCb(data && data.msg ? data.msg : 'Erro'); }
   })
-  .catch(function(err) { if(failCb) failCb(String(err)); });
+  .catch(function(err) { ctrl._clear(); if(failCb) failCb(String(err)); });
 }
 
 // ════════════════════════════════════════════════════════════════════
 // carregarMotoristas — busca lista com fallback fetch → cache local
 // ════════════════════════════════════════════════════════════════════
 function carregarMotoristas(onFim) {
-  if (navigator.onLine) {
-    var fetchFallback = function() {
-      fetch(APP_URL + '?motoristas=1')
-        .then(function(r) { return r.json(); })
-        .then(function(l) {
-          NM = l || [];
-          salvarMotoristasCache(NM);
-          if(onFim) onFim();
-        })
-        .catch(function() {
-          buscarMotoristasCache(function(c) { NM = c; if(onFim) onFim(); });
-        });
+  buscarMotoristasCache(function(cached) {
+    if (cached && cached.length > 0) {
+      // ── Cache existe: UI imediata + atualização silenciosa em background ──
+      NM = cached;
+      if (onFim) onFim();
+      _atualizarMotoristasBackground();
+    } else {
+      // ── Sem cache (1ª vez / incógnito): busca rede antes de liberar UI ──
+      var biEl = document.getElementById('bi');
+      if (biEl) biEl.placeholder = 'Carregando nomes...';
+      var _done = function(lista) {
+        NM = lista || [];
+        if (biEl) biEl.placeholder = 'Digite seu nome...';
+        if (onFim) onFim();
+      };
+      testarConectividade(function(online) {
+        if (!online) { _done([]); return; }
+        var ctrl = criarAbort(8000);
+        var fetchNomes = function() {
+          fetch(APP_URL + '?motoristas=1', { signal: ctrl.signal })
+            .then(function(r) { ctrl._clear(); return r.json(); })
+            .then(function(l) { if(l && l.length > 0) salvarMotoristasCache(l); _done(l); })
+            .catch(function() { ctrl._clear(); _done([]); });
+        };
+        try {
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+              .withSuccessHandler(function(l) { ctrl._clear(); if(l) salvarMotoristasCache(l); _done(l); })
+              .withFailureHandler(fetchNomes)
+              .getMotoristas();
+          } else { fetchNomes(); }
+        } catch(e) { fetchNomes(); }
+      });
+    }
+  });
+}
+
+function _atualizarMotoristasBackground() {
+  // Atualiza a lista de motoristas silenciosamente e re-renderiza sugestões
+  // se o usuário já estiver digitando no campo de nome.
+  testarConectividade(function(online) {
+    if (!online) return;
+    var ctrl = criarAbort(8000);
+    var _aplicar = function(l) {
+      if (l && l.length > 0) {
+        NM = l; salvarMotoristasCache(NM);
+        // Re-renderiza dropdown se o usuário estiver no campo de nome
+        var bi = document.getElementById('bi');
+        if (bi && bi.value.trim().length > 0) bi.dispatchEvent(new Event('input'));
+      }
+    };
+    var fetchBg = function() {
+      fetch(APP_URL + '?motoristas=1', { signal: ctrl.signal })
+        .then(function(r) { ctrl._clear(); return r.json(); })
+        .then(_aplicar).catch(function() { ctrl._clear(); });
     };
     try {
       if (typeof google !== 'undefined' && google.script && google.script.run) {
         google.script.run
-          .withSuccessHandler(function(l) {
-            NM = l || [];
-            salvarMotoristasCache(NM);
-            if(onFim) onFim();
-          })
-          .withFailureHandler(fetchFallback)
-          .getMotoristas();
-      } else {
-        fetchFallback();
-      }
-    } catch(e) {
-      fetchFallback();
-    }
-  } else {
-    buscarMotoristasCache(function(c) { NM = c; if(onFim) onFim(); });
-  }
+          .withSuccessHandler(function(l) { ctrl._clear(); _aplicar(l); })
+          .withFailureHandler(fetchBg).getMotoristas();
+      } else { fetchBg(); }
+    } catch(e) { fetchBg(); }
+  });
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -483,7 +550,15 @@ function atualizarStatusBar() {
 // BLOCO 3 — SINCRONIZAÇÃO AUTOMÁTICA E MANUAL
 // ═══════════════════════════════════════════════════════════
 function sincronizarPendentes() {
+  // Testa conectividade real antes de sincronizar (evita fetch travado Android)
   if (!navigator.onLine || _sincronizando) return;
+  if (!_conectividadeOk) {
+    // Testa real antes de tentar (resultado assíncrono, re-tenta se online)
+    testarConectividade(function(ok) {
+      if (ok) sincronizarPendentes();
+    });
+    return;
+  }
   buscarPendentes(function(pendentes) {
     if (!pendentes || pendentes.length === 0) { atualizarStatusBar(); return; }
     _sincronizando = true;
@@ -540,7 +615,11 @@ function syncManual() {
 // Dispara sincronização ao voltar online
 window.addEventListener('online', function() {
   atualizarStatusBar();
-  setTimeout(sincronizarPendentes, 1500);
+  // Confirma conectividade real antes de sincronizar
+  // (Android pode disparar 'online' mesmo sem internet de verdade)
+  testarConectividade(function(ok) {
+    if (ok) setTimeout(sincronizarPendentes, 1000);
+  });
 });
 window.addEventListener('offline', function() {
   atualizarStatusBar();
@@ -863,8 +942,10 @@ window.onload=function(){
     document.getElementById('mot').value=n;
     document.getElementById('nL').textContent=n;
     document.getElementById('telaBV').style.display='none';
-    // Sincroniza pendentes se estiver online
-    if(navigator.onLine){ setTimeout(sincronizarPendentes, 2000); }
+    // Testa conectividade real antes de sincronizar (fix Android)
+    testarConectividade(function(ok) {
+      if (ok) setTimeout(sincronizarPendentes, 500);
+    });
   }else{
     document.getElementById('telaBV').style.display='flex';
     // Busca nomes: online=servidor+cache, offline=somente cache
