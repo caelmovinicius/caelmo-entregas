@@ -53,6 +53,8 @@ self.addEventListener('fetch', function(e) {
   // Deixa passar: chamadas para o GAS (API backend)
   if (url.indexOf('script.google.com') >= 0) return;
   if (url.indexOf('script.googleusercontent.com') >= 0) return;
+  // Deixa passar: teste de conectividade real (não serve do cache)
+  if (url.indexOf('connectivity=1') >= 0) return;
 
   // Para o próprio app (GitHub Pages): Cache-First
   e.respondWith(
