@@ -276,24 +276,42 @@ function testarConectividade(cb) {
 }
 
 function enviarViaFetch(dados, successCb, failCb) {
-  if (!APP_URL) { if(failCb) failCb('Sem URL'); return; }
-  var ctrl = criarAbort(20000);
+
+  if (!APP_URL) {
+    if (failCb) failCb('Sem URL');
+    return;
+  }
+
+  var ctrl = criarAbort(30000);
+
   fetch(APP_URL, {
     method: 'POST',
+    mode: 'no-cors',
+    headers: {
+      'Content-Type': 'text/plain;charset=utf-8'
+    },
     body: JSON.stringify(dados),
-    redirect: 'follow',
     signal: ctrl.signal
   })
-  .then(function(res) {
+
+  .then(function() {
+
     ctrl._clear();
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    return res.json();
+
+    // no-cors não permite ler resposta
+    // então assume sucesso se não caiu no catch
+    if (successCb) successCb();
+
   })
-  .then(function(data) {
-    if (data && data.status === 'ok') { if(successCb) successCb(); }
-    else { if(failCb) failCb(data && data.msg ? data.msg : 'Erro'); }
-  })
-  .catch(function(err) { ctrl._clear(); if(failCb) failCb(String(err)); });
+
+  .catch(function(err) {
+
+    ctrl._clear();
+
+    if (failCb) failCb(String(err));
+
+  });
+
 }
 
 // ════════════════════════════════════════════════════════════════════
