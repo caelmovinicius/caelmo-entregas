@@ -1,297 +1,587 @@
 <!DOCTYPE html>
+
 <html lang="pt-BR">
+
 <head>
+
 <meta charset="UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
 <meta name="theme-color" content="#1a56db">
+
 <meta name="mobile-web-app-capable" content="yes">
+
 <meta name="apple-mobile-web-app-capable" content="yes">
+
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
 <meta name="apple-mobile-web-app-title" content="CAELMO">
 
 <link rel="manifest" href="./manifest.json">
+
 <title>Registro de Entrega</title>
+
 <style>
+
 *{box-sizing:border-box;margin:0;padding:0}
+
 html,body{font-family:Arial,sans-serif;background:#e8e8e8;overflow-x:hidden;touch-action:pan-y}
+
 /* ── INDICADOR DE STATUS OFFLINE (NOVO) ── */
+
 #statusBar{position:fixed;top:0;left:0;width:100%;z-index:99998;display:flex;align-items:center;justify-content:space-between;padding:6px 12px;font-size:11px;font-weight:900;letter-spacing:1px;transition:background .4s,color .4s;gap:8px}
+
 #statusBar.online{background:#0d3321;color:#4ade80}
+
 #statusBar.offline{background:#7f1d1d;color:#fca5a5}
+
 #statusBar.syncing{background:#1e3a5f;color:#67c8c8;animation:blink .8s ease infinite}
+
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.6}}
+
 #statusDot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
 #statusBar.online #statusDot{background:#4ade80}
+
 #statusBar.offline #statusDot{background:#f87171}
+
 #statusBar.syncing #statusDot{background:#67c8c8}
+
 #statusTxt{flex:1}
+
 #statusPendentes{background:rgba(255,255,255,0.15);border-radius:10px;padding:2px 8px;white-space:nowrap}
+
 #btnSync{background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);border-radius:6px;padding:3px 8px;color:inherit;font-size:10px;font-weight:900;cursor:pointer;white-space:nowrap;-webkit-appearance:none}
+
 #btnSync:active{background:rgba(255,255,255,0.35)}
+
 body{padding-top:32px}
+
 #telaBV{position:fixed;top:32px;left:0;width:100%;height:calc(100% - 32px);background:#e8e8e8;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem}
+
 .bv-logo{width:120px;height:120px;border-radius:50%;border:4px solid #1a56db;object-fit:cover;margin-bottom:1rem;animation:neon 2s ease-in-out infinite}
+
 @keyframes neon{0%,100%{box-shadow:0 0 8px #1a56db,0 0 20px #1a56db,0 0 40px #1a56db;border-color:#1a56db}50%{box-shadow:0 0 16px #4d8bff,0 0 40px #4d8bff,0 0 80px #4d8bff;border-color:#4d8bff}}
+
 .bv-titulo{font-size:22px;font-weight:900;color:#111;margin-bottom:4px}
+
 .bv-sub{font-size:13px;color:#555;margin-bottom:1.5rem;font-weight:600}
+
 .bv-card{background:#fff;border:2px solid #ccc;border-radius:14px;padding:1.25rem;width:100%;max-width:360px}
+
 .bv-label{font-size:13px;font-weight:900;color:#111;display:block;margin-bottom:8px}
+
 .bv-input{width:100%;padding:13px;border:2px solid #bbb;border-radius:8px;font-size:16px;background:#f5f5f5;color:#111;font-family:Arial,sans-serif;outline:none;-webkit-appearance:none;font-weight:600}
+
 .bv-input:focus{border-color:#1a56db;background:#fff}
+
 .bv-lista{display:none;border:2px solid #1a56db;border-top:none;border-radius:0 0 8px 8px;background:#fff;max-height:200px;overflow-y:auto}
+
 .bv-item{padding:13px 14px;font-size:15px;font-weight:700;color:#111;cursor:pointer;border-bottom:1px solid #eee}
+
 .bv-item:last-child{border-bottom:none}
+
 .bv-item:active{background:#e8f0ff}
+
 .bv-sel{display:none;margin-top:10px;background:#e8f0ff;border:2px solid #1a56db;border-radius:8px;padding:10px 14px;align-items:center;justify-content:space-between}
+
 .bv-sel-nome{color:#1a56db;font-weight:900;font-size:15px}
+
 .bv-trocar{background:none;border:none;color:#888;font-size:12px;text-decoration:underline;cursor:pointer}
+
 .bv-btn{width:100%;margin-top:12px;padding:14px;background:#ccc;color:#888;border:none;border-radius:8px;font-size:17px;font-weight:900;cursor:not-allowed;-webkit-appearance:none}
+
 .bv-btn.ok{background:#1a56db;color:#fff;cursor:pointer}
+
 .container{max-width:480px;margin:0 auto;padding:1rem}
+
 .header{background:#1a56db;padding:1rem;border-radius:12px 12px 0 0;text-align:center}
+
 .logo-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:6px}
+
 .logo-circ{width:56px;height:56px;border-radius:50%;overflow:hidden;border:3px solid #fff;background:#fff;flex-shrink:0}
+
 .logo-circ img{width:100%;height:100%;object-fit:cover}
+
 .h-nome{font-size:21px;font-weight:900;color:#fff;letter-spacing:2px}
+
 .h-sub{font-size:10px;color:#c0d4ff;letter-spacing:1px}
+
 .h-titulo{font-size:12px;color:#c0d4ff;border-top:1px solid rgba(255,255,255,0.3);padding-top:7px;margin-top:6px;font-weight:800;letter-spacing:1px}
+
 .form-body{background:#f5f5f5;border:1px solid #ddd;border-top:none;border-radius:0 0 12px 12px;padding:1.25rem}
+
 .resp-lbl{font-size:11px;color:#1a56db;font-weight:900;letter-spacing:1px;margin-bottom:5px;display:block}
+
 .badge-resp{background:#fff;border:2px solid #1a56db;border-radius:8px;padding:11px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+
 .badge-resp-nome{color:#111;font-size:14px;font-weight:800}
+
 .btn-nao{background:none;border:none;color:#888;font-size:12px;text-decoration:underline;cursor:pointer}
+
 .field{margin-bottom:.9rem}
+
 .field label{display:block;font-size:13px;font-weight:900;color:#111;margin-bottom:5px}
+
 .req{color:#cc0000}
+
 .field input,.field textarea{width:100%;padding:12px 13px;border:2px solid #bbb;border-radius:8px;font-size:15px;background:#fff;color:#111;font-family:Arial,sans-serif;font-weight:600;outline:none;-webkit-appearance:none}
+
 .field input:focus,.field textarea:focus{border-color:#1a56db}
+
 .field textarea{min-height:75px;resize:vertical}
+
 .notas-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:.9rem}
+
 .nbox{background:#fff;border:2px solid #ddd;border-radius:8px;padding:9px}
+
 .nbox-title{font-size:10px;font-weight:900;color:#111;margin-bottom:7px;display:flex;align-items:center;gap:3px;flex-wrap:wrap}
+
 .ob{background:#cc0000;color:#fff;font-size:9px;padding:2px 6px;border-radius:8px;font-weight:900}
+
 .op{background:#666;color:#fff;font-size:9px;padding:2px 6px;border-radius:8px;font-weight:700}
+
 .foto-section{background:#fff;border:2px solid #ddd;border-radius:8px;padding:10px;margin-bottom:.9rem}
+
 .foto-title{font-size:12px;font-weight:900;color:#111;margin-bottom:8px;display:flex;align-items:center;gap:5px}
+
 .foto-label{display:block;width:100%;padding:.9rem .5rem;border:2px dashed #bbb;border-radius:8px;background:#f5f5f5;text-align:center;cursor:pointer;position:relative;overflow:hidden}
+
 .foto-label:active{background:#e8f0ff;border-color:#1a56db}
+
 .foto-label span{display:block}
+
 .foto-label .fi{font-size:24px;margin-bottom:3px}
+
 .foto-label .ft{font-size:11px;font-weight:700;color:#333;margin-bottom:2px}
+
 .foto-label .fs{font-size:10px;color:#888}
+
 .foto-label input{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:0}
+
 .prev{display:none;margin-top:7px;border-radius:7px;overflow:hidden;border:2px solid #1a56db}
+
 .prev img{width:100%;display:block;max-height:120px;object-fit:cover}
+
 .prev-bar{display:flex;align-items:center;justify-content:space-between;padding:5px 8px;background:#e8f0ff}
+
 .prev-bar span{font-size:10px;font-weight:700;color:#333}
+
 .rm{font-size:11px;color:#cc0000;font-weight:900;border:none;background:none;cursor:pointer}
+
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:8px}
+
 .thumb{position:relative;border-radius:7px;overflow:hidden;aspect-ratio:1;background:#eee;border:2px solid #bbb}
+
 .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+
 .thumb .rmt{position:absolute;top:3px;right:3px;background:rgba(170,0,0,0.9);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:900}
+
 .btn-add{width:100%;padding:12px;background:#fff;border:2px dashed #1a56db;border-radius:8px;color:#1a56db;font-size:13px;font-weight:900;cursor:pointer;margin-top:7px;position:relative;overflow:hidden}
+
 .btn-add input{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:0}
+
 .btn-add:disabled{opacity:.3}
+
 .cnt{font-size:11px;color:#666;text-align:right;margin-top:4px;font-weight:700}
+
 .btn-reg{width:100%;padding:15px;background:#1a56db;color:#fff;border:none;border-radius:8px;font-size:17px;font-weight:900;cursor:pointer;margin-top:.75rem;-webkit-appearance:none;box-shadow:0 4px 14px rgba(26,86,219,0.4)}
+
 .btn-reg:disabled{background:#aaa;color:#ddd;cursor:not-allowed;box-shadow:none}
+
 /* ── STATUS DA ENTREGA ── */
+
 .status-section{background:#fff;border:2px solid #ddd;border-radius:8px;padding:10px 12px;margin-bottom:.9rem}
+
 .status-title{font-size:12px;font-weight:900;color:#111;margin-bottom:10px;display:flex;align-items:center;gap:5px}
+
 .status-opts{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+
 .status-opt{position:relative}
+
 .status-opt input[type=radio]{position:absolute;opacity:0;width:0;height:0}
+
 .status-opt label{display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid #ddd;border-radius:8px;background:#f5f5f5;cursor:pointer;font-size:13px;font-weight:700;color:#333;transition:border-color .2s,background .2s;-webkit-tap-highlight-color:transparent}
+
 .status-opt label:active{background:#e8f0ff}
+
 .status-opt .sico{font-size:18px;flex-shrink:0}
+
 .status-opt input:checked + label{border-color:#1a56db;background:#e8f0ff;color:#1a56db}
+
 .status-opt.op-completa input:checked + label{border-color:#0a8a3a;background:#e8f8ee;color:#0a8a3a}
+
 .status-opt.op-parcial input:checked + label{border-color:#b45309;background:#fff7e6;color:#b45309}
+
 .status-opt.op-devolucao input:checked + label{border-color:#cc0000;background:#fff0f0;color:#cc0000}
+
 .status-opt.op-incompleto input:checked + label{border-color:#7c3aed;background:#f5f0ff;color:#7c3aed}
+
 #obsWrap .obs-aviso{font-size:11px;font-weight:900;padding:4px 8px;border-radius:5px;margin-bottom:5px;display:none}
+
 #obsWrap.obs-required .obs-aviso{display:block;background:#fff0f0;color:#cc0000;border:1px solid #fca5a5}
+
 #obsWrap.obs-required textarea{border-color:#cc0000}
+
 .spinner{width:50px;height:50px;border:5px solid #ddd;border-top:5px solid #1a56db;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto}
+
 @keyframes spin{to{transform:rotate(360deg)}}
+
 .loading{display:none;text-align:center;padding:3rem 1rem}
+
 .loading p{font-size:14px;color:#333;margin-top:1rem;line-height:1.6;font-weight:700}
+
 .success{display:none;text-align:center;padding:2.5rem 1rem}
+
 .cc{width:96px;height:96px;border-radius:50%;background:#fff;border:5px solid #0a8a3a;display:flex;align-items:center;justify-content:center;margin:0 auto 1.1rem;animation:pop .5s cubic-bezier(.175,.885,.32,1.275) forwards}
+
 @keyframes pop{0%{transform:scale(0);opacity:0}60%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
+
 .cs{width:50px;height:50px;animation:fi .3s ease .4s forwards;opacity:0}
+
 @keyframes fi{to{opacity:1}}
+
 .success h2{font-size:22px;font-weight:900;color:#0a8a3a;margin-bottom:8px;animation:fu .5s ease .6s forwards;opacity:0}
+
 .success .mn{font-size:17px;color:#1a56db;font-weight:900;margin-bottom:6px;animation:fu .5s ease .8s forwards;opacity:0}
+
 .success p{font-size:14px;color:#333;line-height:1.5;animation:fu .5s ease 1s forwards;opacity:0;font-weight:700}
+
 .btn-novo{margin-top:1.4rem;padding:12px 26px;border:2px solid #bbb;border-radius:8px;background:#fff;color:#111;font-size:14px;cursor:pointer;font-weight:800;animation:fu .5s ease 1.2s forwards;opacity:0}
+
 @keyframes fu{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:translateY(0)}}
+
 #po{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.55);z-index:99999;align-items:center;justify-content:center;padding:1.5rem}
+
 #pb{background:#fff;border-radius:14px;padding:1.75rem 1.25rem;text-align:center;max-width:300px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,.3)}
+
 #pi{font-size:44px;margin-bottom:.6rem}
+
 #pt{font-size:17px;font-weight:900;color:#cc0000;margin-bottom:7px}
+
 #pm{font-size:14px;color:#333;font-weight:700;line-height:1.5;margin-bottom:1rem}
+
 #pbtn{width:100%;padding:13px;background:#1a56db;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:900;cursor:pointer}
+
+
+/* ── CAELMO Autocomplete Clientes ── */
+.cli-wrapper{position:relative;width:100%}
+#cli-sugestoes{display:none;position:absolute;top:100%;left:0;right:0;z-index:9999;background:#fff;border:2px solid #1a56db;border-top:none;border-radius:0 0 8px 8px;max-height:250px;overflow-y:auto;box-shadow:0 6px 16px rgba(0,0,0,0.12);-webkit-overflow-scrolling:touch}
+.cli-item{padding:12px 14px;font-size:15px;font-weight:700;color:#111;cursor:pointer;border-bottom:1px solid #f0f0f0;-webkit-tap-highlight-color:transparent}
+.cli-item:last-child{border-bottom:none}
+.cli-item:active,.cli-item:hover{background:#e8f0ff}
+.cli-match{background:#fff3cd;border-radius:2px;padding:0 1px}
+.cli-vazio{padding:12px 14px;font-size:13px;color:#888;text-align:center;font-style:italic}
+
 </style>
+
 </head>
+
 <body>
+
 <!-- ── BARRA DE STATUS OFFLINE (NOVO) ── -->
+
 <div id="statusBar" class="online">
+
   <div id="statusDot"></div>
+
   <span id="statusTxt">ONLINE</span>
+
   <span id="statusPendentes" style="display:none">⏳ <span id="numPend">0</span> pendente(s)</span>
+
   <button id="btnSync" onclick="syncManual()" style="display:none">↑ SINCRONIZAR</button>
+
 </div>
+
 <div id="telaBV">
+
   <div style="background:#fff;border:2px solid #ccc;border-radius:14px;padding:1rem 1.5rem;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.1);width:100%;max-width:360px;margin-bottom:1.5rem">
+
     <div style="font-size:11px;font-weight:900;color:#1a56db;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:8px">Registro de Entregas</div>
+
     <div id="bvData" style="font-size:13px;font-weight:700;color:#555;letter-spacing:0.5px;margin-bottom:4px"></div>
+
     <div id="bvHora" style="font-size:36px;font-weight:900;color:#1a56db;letter-spacing:3px;line-height:1.1"></div>
+
   </div>
+
   <img class="bv-logo" src="data:image/jpeg;base64,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" alt="CAELMO">
+
   <div class="bv-titulo">BEM-VINDO!</div>
+
   <div class="bv-sub">Identifique-se para comecar o dia</div>
+
   <div class="bv-card">
+
     <span class="bv-label">QUAL O SEU NOME?</span>
+
     <input type="text" class="bv-input" id="bi" placeholder="Digite seu nome..." autocomplete="off">
+
     <div class="bv-lista" id="bl"></div>
+
     <div class="bv-sel" id="bs">
+
       <span class="bv-sel-nome" id="bn"></span>
+
       <button class="bv-trocar" onclick="bLimpar()">Trocar</button>
+
     </div>
+
     <button class="bv-btn" id="bb" onclick="bConfirmar()">ENTRAR</button>
+
   </div>
+
 </div>
+
 <div id="po" onclick="fP()">
+
   <div id="pb" onclick="event.stopPropagation()">
+
     <div id="pi">⚠️</div>
+
     <div id="pt">ATENCAO</div>
+
     <div id="pm"></div>
+
     <button id="pbtn" onclick="fP()">OK, ENTENDI</button>
+
   </div>
+
 </div>
+
 <div class="container">
+
   <div class="header">
+
     <div class="logo-row">
+
       <div class="logo-circ"><img src="data:image/jpeg;base64,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" alt="CAELMO"></div>
+
       <div><div class="h-nome">CAELMO</div><div class="h-sub">MATERIAIS PARA CONSTRUCAO</div></div>
+
     </div>
+
     <div class="h-titulo">REGISTRO DE ENTREGAS</div>
+
   </div>
+
   <div class="form-body">
+
     <div id="fA">
+
       <span class="resp-lbl">RESPONSAVEL PELA ENTREGA</span>
+
       <div class="badge-resp">
+
         <span class="badge-resp-nome" id="nL">-</span>
+
         <button class="btn-nao" onclick="bTrocar()">Nao sou eu</button>
+
       </div>
+
       <input type="hidden" id="mot">
+
       <div class="field"><label>NR DO CAMINHAO <span class="req">*</span></label><input type="text" id="cam" placeholder="Ex: CAM-05 ou placa"></div>
+
       <div class="field"><label>NUMERO DO PEDIDO <span class="req">*</span></label><input type="text" id="ped" placeholder="Ex: 20240512-001"></div>
-      <div class="field"><label>NOME DO CLIENTE <span class="req">*</span></label><input type="text" id="cli" placeholder="Nome do destinatario"></div>
+
+      <div class="field"><label>NOME DO CLIENTE <span class="req">*</span></label><div class="cli-wrapper"><input type="text" id="cli" placeholder="Nome do destinatario" autocomplete="off"><div id="cli-sugestoes"></div></div></div>
+
       <div id="obsWrap" class="field">
+
         <label>OBSERVACOES</label>
+
         <div class="obs-aviso" id="obsAviso">⚠ Descreva o que foi devolvido / faltando na nota</div>
+
         <textarea id="obs" placeholder="Ex: cliente ausente, entregue ao porteiro..."></textarea>
+
       </div>
+
       <div class="notas-row">
+
         <div class="nbox">
+
           <div class="nbox-title">NOTA ASSINADA <span class="ob">OBRIG.</span></div>
+
           <label class="foto-label"><span class="fi">📷</span><span class="ft">Toque para fotografar</span><span class="fs">Nao salva no celular</span><input type="file" accept="image/*" capture="environment" onchange="fCap(this,'NF')"></label>
+
           <div class="prev" id="pNF"><img id="iNF" src="" alt=""><div class="prev-bar"><span>nota.jpg</span><button class="rm" onclick="fRem('NF')">x Remover</button></div></div>
+
         </div>
+
         <div class="nbox">
+
           <div class="nbox-title">VERSO <span class="op">OPC.</span></div>
+
           <label class="foto-label"><span class="fi">📷</span><span class="ft">Toque para fotografar</span><span class="fs">Se houver informacao</span><input type="file" accept="image/*" capture="environment" onchange="fCap(this,'NV')"></label>
+
           <div class="prev" id="pNV"><img id="iNV" src="" alt=""><div class="prev-bar"><span>verso.jpg</span><button class="rm" onclick="fRem('NV')">x Remover</button></div></div>
+
         </div>
+
       </div>
+
       <div class="foto-section">
+
         <div class="foto-title">FOTOS DO MATERIAL <span class="ob">1 OBRIG.</span> <span class="op">ATE 5</span></div>
+
         <div class="grid" id="gM"></div>
+
         <button class="btn-add" id="bA">+ ADICIONAR FOTO DO MATERIAL<input type="file" accept="image/*" capture="environment" onchange="fMat(this)"></button>
+
         <div class="cnt" id="cnt">0 / 5 fotos</div>
+
       </div>
+
       <div class="status-section">
+
         <div class="status-title">📋 STATUS DA ENTREGA <span class="ob">OBRIG.</span></div>
+
         <div class="status-opts">
+
           <div class="status-opt op-completa">
+
             <input type="radio" name="stEntrega" id="stCompleta" value="Entrega Completa">
+
             <label for="stCompleta"><span class="sico">✅</span>Entrega Completa</label>
+
           </div>
+
           <div class="status-opt op-incompleto">
+
             <input type="radio" name="stEntrega" id="stIncompleto" value="Incompleto">
+
             <label for="stIncompleto"><span class="sico">⚠️</span>Incompleto</label>
+
           </div>
+
           <div class="status-opt op-devolucao">
+
             <input type="radio" name="stEntrega" id="stDevolucao" value="Devolucao">
+
             <label for="stDevolucao"><span class="sico">🔄</span>Devolucao</label>
+
           </div>
+
           <div class="status-opt op-parcial">
+
             <input type="radio" name="stEntrega" id="stDevParcial" value="Devolucao Parcial">
+
             <label for="stDevParcial"><span class="sico">📦</span>Devolucao Parcial</label>
+
           </div>
+
         </div>
+
       </div>
+
       <button class="btn-reg" id="bE" onclick="enviar()">REGISTRAR ENTREGA</button>
+
     </div>
+
     <div class="loading" id="lA"><div class="spinner"></div><p id="lMsg">Enviando dados e fotos...<br>Por favor aguarde.</p></div>
+
     <div class="success" id="sA">
+
       <div class="cc"><svg class="cs" viewBox="0 0 52 52" fill="none"><polyline points="14,27 22,36 38,18" stroke="#0a8a3a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+
       <h2>ENTREGA REGISTRADA!</h2>
+
       <div class="mn" id="mN"></div>
+
       <p id="pMsg">Dados e fotos salvos<br>com sucesso.</p>
+
       <button class="btn-novo" onclick="reset()">+ REGISTRAR NOVA ENTREGA</button>
+
     </div>
+
   </div>
+
 </div>
+
 <script>
+
 // ════════════════════════════════════════════════════════════════════
+
 // APP_URL — injetada pelo GAS via HtmlTemplate. Fica cacheada no SW.
+
 // ════════════════════════════════════════════════════════════════════
+
 var APP_URL = 'https://script.google.com/macros/s/AKfycbxji_CyMZEcmnIXBD8sH_S_ig1yLYVxIzHDVvkPLKktP_ElSMM15sele4XVY4DR5cKXqA/exec';
 
 // ════════════════════════════════════════════════════════════════════
+
 // enviarViaFetch — fallback quando google.script.run não está disponível
+
 // (service worker cache, Capacitor APK, etc.)
+
 // ════════════════════════════════════════════════════════════════════
+
 // ════════════════════════════════════════════════════════════════════
+
 // FIX ANDROID: AbortController evita fetch travado bloqueando pointer-events
+
 // ════════════════════════════════════════════════════════════════════
+
 function criarAbort(ms) {
+
   var ctrl = new AbortController();
+
   var timer = setTimeout(function() { ctrl.abort(); }, ms || 8000);
+
   ctrl._clear = function() { clearTimeout(timer); };
+
   return ctrl;
+
 }
 
 // Testa conectividade real — ?connectivity=1 é passado direto pra rede pelo SW
+
 var _conectividadeOk = false;
+
 function testarConectividade(cb) {
+
   if (!navigator.onLine) { _conectividadeOk = false; cb(false); return; }
+
   var ctrl = criarAbort(3000);
+
   fetch('./manifest.json?connectivity=1', { method: 'HEAD', cache: 'no-store', signal: ctrl.signal })
+
     .then(function(r) { ctrl._clear(); _conectividadeOk = r.ok; cb(r.ok); })
+
     .catch(function() { ctrl._clear(); _conectividadeOk = false; cb(false); });
+
 }
 
 function enviarViaFetch(dados, successCb, failCb) {
 
   if (!APP_URL) {
+
     if (failCb) failCb('Sem URL');
+
     return;
+
   }
 
   var ctrl = criarAbort(30000);
 
   fetch(APP_URL, {
+
     method: 'POST',
+
     mode: 'no-cors',
+
     headers: {
+
       'Content-Type': 'text/plain;charset=utf-8'
+
     },
+
     body: JSON.stringify(dados),
+
     signal: ctrl.signal
+
   })
 
   .then(function() {
@@ -299,7 +589,9 @@ function enviarViaFetch(dados, successCb, failCb) {
     ctrl._clear();
 
     // no-cors não permite ler resposta
+
     // então assume sucesso se não caiu no catch
+
     if (successCb) successCb();
 
   })
@@ -315,647 +607,1399 @@ function enviarViaFetch(dados, successCb, failCb) {
 }
 
 // ════════════════════════════════════════════════════════════════════
+
 // carregarMotoristas — busca lista com fallback fetch → cache local
+
 // ════════════════════════════════════════════════════════════════════
+
 function buscarMotoristasRede(cb) {
+
   var callbackName = 'cbMotoristas_' + Date.now();
 
   window[callbackName] = function(lista) {
+
     delete window[callbackName];
+
     if (script && script.parentNode) script.parentNode.removeChild(script);
+
     cb(Array.isArray(lista) ? lista : []);
+
   };
 
   var script = document.createElement('script');
+
   script.src = APP_URL + '?motoristas=1&callback=' + callbackName;
 
   script.onerror = function() {
+
     delete window[callbackName];
+
     if (script && script.parentNode) script.parentNode.removeChild(script);
+
     cb([]);
+
   };
 
   document.body.appendChild(script);
+
 }
 
 function carregarMotoristas(onFim) {
+
   var biEl = document.getElementById('bi');
 
   var _aplicar = function(lista) {
+
     NM = Array.isArray(lista) ? lista : [];
 
     if (NM.length > 0) {
+
       salvarMotoristasCache(NM);
+
     }
 
     if (biEl && biEl.value && biEl.value.trim().length > 0) {
+
       setTimeout(function() {
+
         biEl.dispatchEvent(new Event('input'));
+
       }, 50);
+
     }
+
   };
 
   buscarMotoristasCache(function(cached) {
+
     if (cached && cached.length > 0) {
+
       NM = cached;
 
       if (onFim) onFim();
 
       if (navigator.onLine) {
+
         buscarMotoristasRede(function(lista) {
+
           _aplicar(lista);
+
         });
+
       }
 
     } else {
+
       if (biEl) biEl.placeholder = 'Carregando nomes...';
 
       var _done = function(lista) {
+
         _aplicar(lista);
 
         if (biEl) biEl.placeholder = 'Digite seu nome...';
+
         if (onFim) onFim();
+
       };
 
       if (!navigator.onLine) {
+
         _done([]);
+
         return;
+
       }
 
       buscarMotoristasRede(_done);
+
     }
+
   });
+
 }
 
 // ═══════════════════════════════════════════════════════════
+
 // BLOCO 1 — INDEXEDDB
+
 // ═══════════════════════════════════════════════════════════
+
 var DB_NAME = 'caelmo_offline';
+
 var DB_VERSION = 1;
+
 var STORE_ENTREGAS = 'entregas';
+
 var STORE_MOTORISTAS = 'motoristas_cache';
+
 var _db = null;
+
 function abrirDB(cb) {
+
   if (_db) { cb(_db); return; }
+
   var req = indexedDB.open(DB_NAME, DB_VERSION);
+
   req.onupgradeneeded = function(e) {
+
     var db = e.target.result;
+
     if (!db.objectStoreNames.contains(STORE_ENTREGAS)) {
+
       var store = db.createObjectStore(STORE_ENTREGAS, { keyPath: 'id', autoIncrement: true });
+
       store.createIndex('status', 'status', { unique: false });
+
     }
+
     if (!db.objectStoreNames.contains(STORE_MOTORISTAS)) {
+
       db.createObjectStore(STORE_MOTORISTAS, { keyPath: 'chave' });
+
     }
+
   };
+
   req.onsuccess = function(e) { _db = e.target.result; cb(_db); };
+
   req.onerror = function() { cb(null); };
+
 }
+
 function salvarEntregaLocal(dados, cb) {
+
   abrirDB(function(db) {
+
     if (!db) { cb(null); return; }
+
     var tx = db.transaction(STORE_ENTREGAS, 'readwrite');
+
     var store = tx.objectStore(STORE_ENTREGAS);
+
     var registro = {
+
       status: 'pendente',
+
       timestamp: new Date().toISOString(),
+
       motorista: dados.motorista,
+
       caminhao: dados.caminhao,
+
       pedido: dados.pedido,
+
       cliente: dados.cliente,
+
       obs: dados.obs || '',
+
       fotoNotaFrente: dados.fotoNotaFrente,
+
       fotoNotaVerso: dados.fotoNotaVerso || '',
+
       fotosMaterial: dados.fotosMaterial || []
+
     };
+
     var req = store.add(registro);
+
     req.onsuccess = function(e) { cb(e.target.result); };
+
     req.onerror = function() { cb(null); };
+
   });
+
 }
+
 function marcarEntregaSincronizada(id) {
+
   abrirDB(function(db) {
+
     if (!db) return;
+
     var tx = db.transaction(STORE_ENTREGAS, 'readwrite');
+
     var store = tx.objectStore(STORE_ENTREGAS);
+
     var req = store.get(id);
+
     req.onsuccess = function(e) {
+
       var item = e.target.result;
+
       if (!item) return;
+
       // Remove fotos para liberar espaço, mantém apenas metadados por 24h
+
       item.status = 'sincronizado';
+
       item.fotoNotaFrente = '';
+
       item.fotoNotaVerso = '';
+
       item.fotosMaterial = [];
+
       store.put(item);
+
     };
+
   });
+
 }
+
 function buscarPendentes(cb) {
+
   abrirDB(function(db) {
+
     if (!db) { cb([]); return; }
+
     var tx = db.transaction(STORE_ENTREGAS, 'readonly');
+
     var store = tx.objectStore(STORE_ENTREGAS);
+
     var idx = store.index('status');
+
     var req = idx.getAll('pendente');
+
     req.onsuccess = function(e) { cb(e.target.result || []); };
+
     req.onerror = function() { cb([]); };
+
   });
+
 }
+
 function contarPendentes(cb) {
+
   abrirDB(function(db) {
+
     if (!db) { cb(0); return; }
+
     var tx = db.transaction(STORE_ENTREGAS, 'readonly');
+
     var store = tx.objectStore(STORE_ENTREGAS);
+
     var idx = store.index('status');
+
     var req = idx.count('pendente');
+
     req.onsuccess = function(e) { cb(e.target.result || 0); };
+
     req.onerror = function() { cb(0); };
+
   });
+
 }
+
 // Cache de motoristas no IndexedDB (para uso offline)
+
 function salvarMotoristasCache(lista) {
+
   abrirDB(function(db) {
+
     if (!db) return;
+
     var tx = db.transaction(STORE_MOTORISTAS, 'readwrite');
+
     var store = tx.objectStore(STORE_MOTORISTAS);
+
     store.put({ chave: 'lista', nomes: lista, atualizado: new Date().toISOString() });
+
   });
+
 }
+
 function buscarMotoristasCache(cb) {
+
   abrirDB(function(db) {
+
     if (!db) { cb([]); return; }
+
     var tx = db.transaction(STORE_MOTORISTAS, 'readonly');
+
     var store = tx.objectStore(STORE_MOTORISTAS);
+
     var req = store.get('lista');
+
     req.onsuccess = function(e) {
+
       var r = e.target.result;
+
       cb(r && r.nomes ? r.nomes : []);
+
     };
+
     req.onerror = function() { cb([]); };
+
   });
+
 }
+
 // Limpar sincronizados com mais de 24h
+
 function limparSincronizadosAntigos() {
+
   abrirDB(function(db) {
+
     if (!db) return;
+
     var tx = db.transaction(STORE_ENTREGAS, 'readwrite');
+
     var store = tx.objectStore(STORE_ENTREGAS);
+
     var idx = store.index('status');
+
     var req = idx.openCursor('sincronizado');
+
     var limite = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
     req.onsuccess = function(e) {
+
       var cursor = e.target.result;
+
       if (!cursor) return;
+
       if (cursor.value.timestamp < limite) {
+
         cursor.delete();
+
       }
+
       cursor.continue();
+
     };
+
   });
+
 }
+
 // ═══════════════════════════════════════════════════════════
+
 // BLOCO 2 — INDICADOR DE STATUS / SINCRONIZAÇÃO
+
 // ═══════════════════════════════════════════════════════════
+
 var _sincronizando = false;
+
 function atualizarStatusBar() {
+
   contarPendentes(function(n) {
+
     var bar = document.getElementById('statusBar');
+
     var txt = document.getElementById('statusTxt');
+
     var pend = document.getElementById('statusPendentes');
+
     var numPend = document.getElementById('numPend');
+
     var btnSync = document.getElementById('btnSync');
+
     if (_sincronizando) {
+
       bar.className = 'syncing';
+
       txt.textContent = 'SINCRONIZANDO...';
+
       pend.style.display = 'none';
+
       btnSync.style.display = 'none';
+
     } else if (!navigator.onLine) {
+
       bar.className = 'offline';
+
       txt.textContent = 'OFFLINE — sem internet';
+
       if (n > 0) {
+
         numPend.textContent = n;
+
         pend.style.display = 'inline-block';
+
         btnSync.style.display = 'none';
+
       } else {
+
         pend.style.display = 'none';
+
         btnSync.style.display = 'none';
+
       }
+
     } else {
+
       bar.className = 'online';
+
       txt.textContent = 'ONLINE';
+
       if (n > 0) {
+
         numPend.textContent = n;
+
         pend.style.display = 'inline-block';
+
         btnSync.style.display = 'inline-block';
+
       } else {
+
         pend.style.display = 'none';
+
         btnSync.style.display = 'none';
+
       }
+
     }
+
   });
+
 }
+
 // ═══════════════════════════════════════════════════════════
+
 // BLOCO 3 — SINCRONIZAÇÃO AUTOMÁTICA E MANUAL
+
 // ═══════════════════════════════════════════════════════════
+
 function sincronizarPendentes() {
+
   if (!navigator.onLine || _sincronizando) return;
+
   if (!_conectividadeOk) {
+
     testarConectividade(function(ok) { if (ok) sincronizarPendentes(); });
+
     return;
+
   }
+
   buscarPendentes(function(pendentes) {
+
     if (!pendentes || pendentes.length === 0) { atualizarStatusBar(); return; }
+
     _sincronizando = true;
+
     atualizarStatusBar();
+
     var i = 0;
+
     function proxima() {
+
       if (i >= pendentes.length) {
+
         _sincronizando = false;
+
         atualizarStatusBar();
+
         limparSincronizadosAntigos();
+
         return;
+
       }
+
       var entry = pendentes[i];
+
       i++;
+
       var dados = {
+
         motorista: entry.motorista,
+
         caminhao: entry.caminhao,
+
         pedido: entry.pedido,
+
         cliente: entry.cliente,
+
         obs: entry.obs,
+
         fotoNotaFrente: entry.fotoNotaFrente,
+
         fotoNotaVerso: entry.fotoNotaVerso,
+
         fotosMaterial: entry.fotosMaterial
+
       };
+
       // Tenta google.script.run (contexto GAS direto).
+
       // Se indisponível (SW cache / Capacitor), usa fetch POST.
+
       var _onSuc = function() { marcarEntregaSincronizada(entry.id); proxima(); };
+
       var _onFail = function() { proxima(); };
+
       try {
+
         if (typeof google !== 'undefined' && google.script && google.script.run) {
+
           google.script.run
+
             .withSuccessHandler(_onSuc)
+
             .withFailureHandler(function() {
+
               enviarViaFetch(dados, _onSuc, _onFail);
+
             })
+
             .processarEntrega(dados);
+
         } else {
+
           enviarViaFetch(dados, _onSuc, _onFail);
+
         }
+
       } catch(e) {
+
         enviarViaFetch(dados, _onSuc, _onFail);
+
       }
+
     }
+
     proxima();
+
   });
+
 }
+
 function syncManual() {
+
   if (!navigator.onLine) {
+
     erro('Sem internet. Aguarde a conexao retornar.');
+
     return;
+
   }
+
   sincronizarPendentes();
+
 }
+
 // Dispara sincronização ao voltar online
+
 window.addEventListener('online', function() {
+
   atualizarStatusBar();
+
   testarConectividade(function(ok) {
+
     if (ok) setTimeout(sincronizarPendentes, 1000);
+
   });
+
 });
+
 window.addEventListener('offline', function() {
+
   atualizarStatusBar();
+
 });
+
 // Atualiza barra a cada 10s
+
 setInterval(atualizarStatusBar, 10000);
+
 // ═══════════════════════════════════════════════════════════
+
 // BLOCO 4 — CÓDIGO ORIGINAL (sem alterações)
+
 // ═══════════════════════════════════════════════════════════
+
 var NM=[];
+
 var sel='';
+
 document.getElementById('bi').addEventListener('input',function(){
+
   var v=this.value.trim();
+
   sel='';
+
   document.getElementById('bs').style.display='none';
+
   document.getElementById('bb').className='bv-btn';
+
   var l=document.getElementById('bl');
+
   if(!v){l.style.display='none';return;}
+
   var f=NM.filter(function(n){return n.toLowerCase().indexOf(v.toLowerCase())>=0;});
+
   if(!f.length){l.style.display='none';return;}
+
     l.innerHTML='';
+
   f.forEach(function(n){
+
     var d=document.createElement('div');
+
     d.className='bv-item';
+
     d.textContent=n;
+
     d.onclick=(function(nome){return function(){bSel(nome);};})(n);
+
     l.appendChild(d);
+
   });
+
   l.style.display='block';
+
 });
+
 function bSel(n){
+
   sel=n;
+
   document.getElementById('bi').value=n;
+
   document.getElementById('bl').style.display='none';
+
   document.getElementById('bn').textContent=n;
+
   document.getElementById('bs').style.display='flex';
+
   document.getElementById('bb').className='bv-btn ok';
+
 }
+
 function bLimpar(){
+
   sel='';
+
   document.getElementById('bi').value='';
+
   document.getElementById('bl').style.display='none';
+
   document.getElementById('bs').style.display='none';
+
   document.getElementById('bb').className='bv-btn';
+
   document.getElementById('bi').focus();
+
 }
+
 function bConfirmar(){
+
   if(!sel)return;
+
   var h=new Date().toDateString();
+
   try{localStorage.setItem('cm_n',sel);localStorage.setItem('cm_d',h);}catch(e){}
+
   document.getElementById('mot').value=sel;
+
   document.getElementById('nL').textContent=sel;
+
   document.getElementById('telaBV').style.display='none';
+
 }
+
 function bTrocar(){
+
   try{localStorage.removeItem('cm_n');localStorage.removeItem('cm_d');}catch(e){}
+
   document.getElementById('mot').value='';
+
   document.getElementById('nL').textContent='-';
+
   bLimpar();
+
   document.getElementById('telaBV').style.display='flex';
+
   // Busca lista — online tenta servidor, offline usa cache
+
   carregarMotoristas();
+
   setTimeout(function(){document.getElementById('bi').focus();},200);
+
 }
+
 function erro(m){document.getElementById('pm').textContent=m;document.getElementById('po').style.display='flex';}
+
 function fP(){document.getElementById('po').style.display='none';}
+
 function fCap(inp,id){
+
   var f=inp.files[0];if(!f)return;
+
   if(f.size>10*1024*1024){erro('Foto muito grande. Max 10MB.');inp.value='';return;}
+
   var r=new FileReader();
+
   r.onload=function(e){document.getElementById('i'+id).src=e.target.result;document.getElementById('p'+id).style.display='block';};
+
   r.readAsDataURL(f);
+
 }
+
 function fRem(id){document.getElementById('i'+id).src='';document.getElementById('p'+id).style.display='none';}
+
 var mats=[];
+
 function fMat(inp){
+
   var f=inp.files[0];inp.value='';
+
   if(!f)return;
+
   if(mats.length>=5){erro('Maximo 5 fotos.');return;}
+
   if(f.size>10*1024*1024){erro('Foto muito grande.');return;}
+
   var r=new FileReader();
+
   r.onload=function(e){mats.push({dataUrl:e.target.result,tipo:f.type});rGrid();};
+
   r.readAsDataURL(f);
+
 }
+
 function rGrid(){
+
   var g=document.getElementById('gM');g.innerHTML='';
+
   mats.forEach(function(f,i){
+
     var d=document.createElement('div');d.className='thumb';
+
     d.innerHTML='<img src="'+f.dataUrl+'"><button class="rmt" onclick="rMat('+i+')">x</button>';
+
     g.appendChild(d);
+
   });
+
   document.getElementById('bA').disabled=mats.length>=5;
+
   document.getElementById('cnt').textContent=mats.length+' / 5 fotos';
+
 }
+
 function rMat(i){mats.splice(i,1);rGrid();}
+
 function comp(d,cb){
+
   var img=new Image();
+
   img.onload=function(){
+
     var c=document.createElement('canvas'),w=img.width,h=img.height;
+
     if(w>800){h=Math.round(h*800/w);w=800;}
+
     c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);
+
     cb(c.toDataURL('image/jpeg',.45));
+
   };
+
   img.src=d;
+
 }
+
 function compAll(arr,cb){
+
   if(!arr.length){cb([]);return;}
+
   var r=[],i=0;
+
   function nx(){if(i>=arr.length){cb(r);return;}comp(arr[i].dataUrl,function(c){r.push({dataUrl:c,tipo:'image/jpeg'});i++;nx();});}
+
   nx();
+
 }
+
 var _actx=null;
+
 function initAudio(){
+
   try{
+
     if(_actx)return;
+
     var AC=window.AudioContext||window.webkitAudioContext;
+
     if(!AC)return;
+
     _actx=new AC();
+
     var o=_actx.createOscillator();
+
     var g=_actx.createGain();
+
     g.gain.setValueAtTime(0,_actx.currentTime);
+
     o.connect(g);g.connect(_actx.destination);
+
     o.start();o.stop(_actx.currentTime+0.001);
+
   }catch(e){_actx=null;}
+
 }
+
 function som(){
+
   try{
+
     if(!_actx){
+
       var AC=window.AudioContext||window.webkitAudioContext;
+
       if(!AC)return;
+
       _actx=new AC();
+
     }
+
     if(_actx.state==='suspended'){_actx.resume();}
+
     var notas=[{f:523,t:0},{f:659,t:0.18},{f:784,t:0.36}];
+
     notas.forEach(function(n){
+
       var o=_actx.createOscillator();
+
       var g=_actx.createGain();
+
       o.type='sine';
+
       o.frequency.value=n.f;
+
       o.connect(g);g.connect(_actx.destination);
+
       g.gain.setValueAtTime(0,_actx.currentTime+n.t);
+
       g.gain.linearRampToValueAtTime(0.35,_actx.currentTime+n.t+0.06);
+
       g.gain.exponentialRampToValueAtTime(0.001,_actx.currentTime+n.t+0.35);
+
       o.start(_actx.currentTime+n.t);
+
       o.stop(_actx.currentTime+n.t+0.4);
+
     });
+
   }catch(e){}
+
 }
+
 // ═══════════════════════════════════════════════════════════
+
 // BLOCO 5 — FUNÇÃO enviar() MODIFICADA (lógica offline)
+
 // ═══════════════════════════════════════════════════════════
+
 function enviar(){
+
   initAudio();
+
   var m=document.getElementById('mot').value.trim();
+
   if(!m){erro('Identifique-se primeiro.');bTrocar();return;}
+
   if(!document.getElementById('cam').value.trim()){erro('Preencha o numero do caminhao.');return;}
+
   if(!document.getElementById('ped').value.trim()){erro('Preencha o numero do pedido.');return;}
+
   if(!document.getElementById('cli').value.trim()){erro('Preencha o nome do cliente.');return;}
+
   var nf=document.getElementById('iNF').src;
+
   if(!nf||nf.indexOf('data:')<0){erro('Tire a foto da nota assinada. Ela e obrigatoria.');return;}
+
   if(!mats.length){erro('Tire pelo menos 1 foto do material.');return;}
+
   // ── Validação status da entrega ──
+
   var stSel=document.querySelector('input[name="stEntrega"]:checked');
+
   if(!stSel){erro('Selecione o STATUS da entrega (Entrega Completa, Incompleto, Devolucao ou Devolucao Parcial).');return;}
+
   var stVal=stSel.value;
+
   // Incompleto e Devolucao Parcial exigem observacao
+
   var obsExige=['Incompleto','Devolucao Parcial'];
+
   var obsV=document.getElementById('obs').value.trim();
+
   if(obsExige.indexOf(stVal)>=0 && !obsV){
+
     document.getElementById('obsWrap').classList.add('obs-required');
+
     document.getElementById('obs').focus();
+
     erro('Para "'+stVal+'" e obrigatorio descrever o que faltou ou foi devolvido no campo Observacoes.');
+
     return;
+
   }
+
   document.getElementById('obsWrap').classList.remove('obs-required');
+
   document.getElementById('bE').disabled=true;
+
   document.getElementById('fA').style.display='none';
+
   document.getElementById('lA').style.display='block';
+
   var b={
+
     motorista:m,
+
     caminhao:document.getElementById('cam').value.trim(),
+
     pedido:document.getElementById('ped').value.trim(),
+
     cliente:document.getElementById('cli').value.trim(),
+
     obs:document.getElementById('obs').value.trim(),
+
     statusEntrega:stVal
+
   };
+
   comp(nf,function(nfc){
+
     var vs=document.getElementById('iNV').src;
+
     var tv=vs&&vs.indexOf('data:')>=0;
+
     function ev(nvc){
+
       compAll(mats,function(mc){
+
         var p=b;
+
         p.fotoNotaFrente=nfc;
+
         p.fotoNotaVerso=nvc;
+
         p.fotosMaterial=mc;
+
         // ── SALVA PRIMEIRO NO INDEXEDDB (segurança contra perda) ──
+
         salvarEntregaLocal(p, function(idLocal) {
+
           atualizarStatusBar();
+
           if(!navigator.onLine){
+
             // ── MODO OFFLINE: confirma localmente ──
+
             som();
+
             document.getElementById('lA').style.display='none';
+
             document.getElementById('lMsg').innerHTML='Enviando dados e fotos...<br>Por favor aguarde.';
+
             document.getElementById('mN').textContent='Salvo! '+m.split(' ')[0]+', sincronizaremos em breve.';
+
             document.getElementById('pMsg').innerHTML='Entrega salva <strong>offline</strong>.<br>Sera sincronizada automaticamente<br>quando a internet retornar.';
+
             document.getElementById('sA').style.display='block';
+
             return;
+
           }
+
           // ── MODO ONLINE: envia ao servidor e remove do IDB após confirmação ──
+
           document.getElementById('lMsg').innerHTML='Enviando dados e fotos...<br>Por favor aguarde.';
+
           // Tenta enviar imediatamente. Se falhar, os dados já estão no IDB
+
           // e serão sincronizados automaticamente quando a internet voltar.
+
           var _showSucesso = function() {
+
             if(idLocal) marcarEntregaSincronizada(idLocal);
+
             atualizarStatusBar(); som();
+
             document.getElementById('lA').style.display='none';
+
             document.getElementById('mN').textContent='Obrigado, '+m.split(' ')[0]+'! Bom trabalho!';
+
             document.getElementById('pMsg').innerHTML='Dados e fotos salvos<br>com sucesso.';
+
             document.getElementById('sA').style.display='block';
+
           };
+
           var _showSalvoLocal = function() {
+
             atualizarStatusBar(); som();
+
             document.getElementById('lA').style.display='none';
+
             document.getElementById('mN').textContent='Salvo! '+m.split(' ')[0]+'. Sincronizaremos em breve.';
+
             document.getElementById('pMsg').innerHTML='Entrega salva offline.<br>Sera sincronizada automaticamente<br>quando a internet retornar.';
+
             document.getElementById('sA').style.display='block';
+
           };
+
           try {
+
             if (typeof google !== 'undefined' && google.script && google.script.run) {
+
               google.script.run
+
                 .withSuccessHandler(_showSucesso)
+
                 .withFailureHandler(function() {
+
                   enviarViaFetch(p, _showSucesso, _showSalvoLocal);
+
                 })
+
                 .processarEntrega(p);
+
             } else {
+
               enviarViaFetch(p, _showSucesso, _showSalvoLocal);
+
             }
+
           } catch(e) {
+
             enviarViaFetch(p, _showSucesso, _showSalvoLocal);
+
           }
+
         });
+
       });
+
     }
+
     if(tv){comp(vs,ev);}else{ev('');}
+
   });
+
 }
+
 function reset(){
+
   ['cam','ped','cli','obs'].forEach(function(id){document.getElementById(id).value='';});
+
   // Limpa status da entrega
+
   var stChecked=document.querySelector('input[name="stEntrega"]:checked');
+
   if(stChecked) stChecked.checked=false;
+
   document.getElementById('obsWrap').classList.remove('obs-required');
+
   fRem('NF');fRem('NV');mats=[];rGrid();
+
   document.getElementById('lMsg').innerHTML='Enviando dados e fotos...<br>Por favor aguarde.';
+
   document.getElementById('pMsg').innerHTML='Dados e fotos salvos<br>com sucesso.';
+
   document.getElementById('sA').style.display='none';
+
   document.getElementById('fA').style.display='block';
+
   document.getElementById('bE').disabled=false;
+
 }
+
 function atualizarRelogio(){
+
   var agora=new Date();
+
   var dias=['Domingo','Segunda','Terca','Quarta','Quinta','Sexta','Sabado'];
+
   var meses=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
   var dia=dias[agora.getDay()];
+
   var data=agora.getDate()+' de '+meses[agora.getMonth()]+' de '+agora.getFullYear();
+
   var h=String(agora.getHours()).padStart(2,'0');
+
   var m=String(agora.getMinutes()).padStart(2,'0');
+
   var s=String(agora.getSeconds()).padStart(2,'0');
+
   var dEl=document.getElementById('bvData');
+
   var hEl=document.getElementById('bvHora');
+
   if(dEl)dEl.textContent=dia+', '+data;
+
   if(hEl)hEl.textContent=h+':'+m+':'+s;
+
 }
+
 setInterval(atualizarRelogio,1000);
+
 // ── Listener: aviso em tempo real para status que exigem observacao ──
+
 document.addEventListener('change', function(e) {
+
   if (e.target && e.target.name === 'stEntrega') {
+
     var obsExige = ['Incompleto','Devolucao Parcial'];
+
     var wrap = document.getElementById('obsWrap');
+
     if (obsExige.indexOf(e.target.value) >= 0) {
+
       wrap.classList.add('obs-required');
+
       document.getElementById('obs').placeholder = 'OBRIGATORIO: descreva o que foi devolvido ou faltando...';
+
     } else {
+
       wrap.classList.remove('obs-required');
+
       document.getElementById('obs').placeholder = 'Ex: cliente ausente, entregue ao porteiro...';
+
+    }
+
+  }
+
+});
+
+atualizarRelogio();
+
+// ═══════════════════════════════════════════════════════════
+
+// BLOCO 6 — INICIALIZAÇÃO (window.onload modificado)
+
+// ═══════════════════════════════════════════════════════════
+
+window.onload=function(){
+
+  // Inicializa indicador e sincronização
+
+  atualizarStatusBar();
+
+  limparSincronizadosAntigos();
+
+  // ── PWA: Service Worker via ?sw=1 (compatível com Safari iOS) ──
+
+  // ════════════════════════════════════════════════════════════════════
+
+  // SERVICE WORKER — registro e cache offline confiável
+
+  //
+
+  // PROBLEMA CORRIGIDO: o GAS redireciona para script.googleusercontent.com.
+
+  // fetch() desse URL retorna uma resposta "opaca" (cross-origin redirect) que
+
+  // o Chrome se recusa a servir para navegação quando offline.
+
+  //
+
+  // SOLUÇÃO: em vez de fazer fetch() da URL (que gera resposta opaca),
+
+  // capturamos o outerHTML da página já renderizada e armazenamos como um
+
+  // Response limpo (text/html). Isso garante que o app carregue offline.
+
+  // ════════════════════════════════════════════════════════════════════
+
+  if ('serviceWorker' in navigator) {
+
+    try {
+
+      navigator.serviceWorker.register('./sw.js', { scope: './' })
+
+        .then(function(reg) { reg.update(); })
+
+        .catch(function() {});
+
+    } catch(e) {}
+
+  }
+
+  var n='',d='',h=new Date().toDateString();
+
+  try{n=localStorage.getItem('cm_n')||'';d=localStorage.getItem('cm_d')||'';}catch(e){}
+
+  if(n&&d===h){
+
+    document.getElementById('mot').value=n;
+
+    document.getElementById('nL').textContent=n;
+
+    document.getElementById('telaBV').style.display='none';
+
+    // Testa conectividade real antes de sincronizar
+
+    testarConectividade(function(ok) { if (ok) setTimeout(sincronizarPendentes, 500); });
+
+  }else{
+
+    document.getElementById('telaBV').style.display='flex';
+
+    // Busca nomes: online=servidor+cache, offline=somente cache
+
+    carregarMotoristas(function() {
+
+      setTimeout(sincronizarPendentes, 2000);
+
+    });
+
+    setTimeout(function(){document.getElementById('bi').focus();},200);
+
+  }
+
+};
+
+
+// ── CAELMO Autocomplete de Clientes ──
+(function(){
+  var CSV='https://docs.google.com/spreadsheets/d/1mleBPlM9cFXBbSzDqEQZzZwnQIzK9n-GXMtEDizUB9s/export?format=csv&gid=374477235';
+  var MAX=10,DELAY=280;
+  var nomes=[],carregado=false,carregando=false,timer=null;
+
+  function init(){
+    var inp=document.getElementById('cli');
+    var box=document.getElementById('cli-sugestoes');
+    if(!inp||!box)return;
+
+    inp.addEventListener('focus',function(){
+      if(!carregado&&!carregando)carregar();
+    });
+
+    inp.addEventListener('input',function(){
+      clearTimeout(timer);
+      var v=inp.value.trim();
+      if(v.length<2){fechar(box);return;}
+      timer=setTimeout(function(){
+        if(!carregado&&!carregando)carregar(function(){mostrar(v,inp,box);});
+        else mostrar(v,inp,box);
+      },DELAY);
+    });
+
+    document.addEventListener('mousedown',function(e){
+      if(!box.contains(e.target)&&e.target!==inp)fechar(box);
+    });
+    document.addEventListener('touchstart',function(e){
+      if(!box.contains(e.target)&&e.target!==inp)fechar(box);
+    },{passive:true});
+    inp.addEventListener('keydown',function(e){
+      if(e.key==='Escape')fechar(box);
+    });
+  }
+
+  function carregar(cb){
+    if(carregando||carregado){if(cb)cb();return;}
+    carregando=true;
+    var xhr=new XMLHttpRequest();
+    xhr.open('GET',CSV,true);
+    xhr.timeout=10000;
+    xhr.onload=function(){
+      if(xhr.status===200)nomes=parsear(xhr.responseText);
+      carregado=true;carregando=false;
+      if(cb)cb();
+    };
+    xhr.onerror=xhr.ontimeout=function(){
+      carregado=true;carregando=false;
+      if(cb)cb();
+    };
+    xhr.send();
+  }
+
+  function parsear(txt){
+    var linhas=txt.split(/\r?\n/);
+    if(linhas.length<2)return[];
+    var header=splitL(linhas[0]).map(function(h){
+      return h.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'_');
+    });
+    var cN=colIdx(header,['nome','cliente','razao_social','name']);
+    if(cN===-1)cN=0;
+    var r=[];
+    for(var i=1;i<linhas.length;i++){
+      var c=splitL(linhas[i].trim());
+      var n=(c[cN]||'').trim();
+      if(n)r.push(n);
+    }
+    return r;
+  }
+
+  function colIdx(h,opts){
+    for(var i=0;i<opts.length;i++){var x=h.indexOf(opts[i]);if(x!==-1)return x;}
+    return -1;
+  }
+
+  function splitL(l){
+    var r=[],a='',q=false;
+    for(var i=0;i<l.length;i++){
+      var c=l[i];
+      if(c==='"'){if(q&&l[i+1]==='"'){a+='"';i++;}else{q=!q;}}
+      else if(c===','&&!q){r.push(a);a='';}
+      else{a+=c;}
+    }
+    r.push(a);return r;
+  }
+
+  function norm(s){
+    return s?s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim():'';
+  }
+
+  function esc(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function destacar(txt,termo){
+    var idx=norm(txt).indexOf(norm(termo));
+    if(idx===-1)return esc(txt);
+    return esc(txt.substring(0,idx))+'<span class="cli-match">'+esc(txt.substring(idx,idx+termo.length))+'</span>'+esc(txt.substring(idx+termo.length));
+  }
+
+  function mostrar(termo,inp,box){
+    if(!carregado||!nomes.length){fechar(box);return;}
+    var tn=norm(termo),found=[];
+    for(var i=0;i<nomes.length&&found.length<MAX;i++){
+      if(norm(nomes[i]).indexOf(tn)!==-1)found.push(nomes[i]);
+    }
+    if(!found.length){
+      box.innerHTML='<div class="cli-vazio">Nenhum cliente encontrado — pode digitar livremente.</div>';
+      box.style.display='block';return;
+    }
+    var h='';
+    for(var j=0;j<found.length;j++){
+      h+='<div class="cli-item">'+destacar(found[j],termo)+'</div>';
+    }
+    box.innerHTML=h;
+    box.style.display='block';
+    var itens=box.querySelectorAll('.cli-item');
+    for(var k=0;k<itens.length;k++){
+      (function(el,nome){
+        el.addEventListener('mousedown',function(e){e.preventDefault();selecionar(nome,inp,box);});
+        el.addEventListener('touchend',function(e){e.preventDefault();selecionar(nome,inp,box);});
+      })(itens[k],found[k]);
     }
   }
-});
-atualizarRelogio();
-// ═══════════════════════════════════════════════════════════
-// BLOCO 6 — INICIALIZAÇÃO (window.onload modificado)
-// ═══════════════════════════════════════════════════════════
-window.onload=function(){
-  // Inicializa indicador e sincronização
-  atualizarStatusBar();
-  limparSincronizadosAntigos();
-  // ── PWA: Service Worker via ?sw=1 (compatível com Safari iOS) ──
-  // ════════════════════════════════════════════════════════════════════
-  // SERVICE WORKER — registro e cache offline confiável
-  //
-  // PROBLEMA CORRIGIDO: o GAS redireciona para script.googleusercontent.com.
-  // fetch() desse URL retorna uma resposta "opaca" (cross-origin redirect) que
-  // o Chrome se recusa a servir para navegação quando offline.
-  //
-  // SOLUÇÃO: em vez de fazer fetch() da URL (que gera resposta opaca),
-  // capturamos o outerHTML da página já renderizada e armazenamos como um
-  // Response limpo (text/html). Isso garante que o app carregue offline.
-  // ════════════════════════════════════════════════════════════════════
-  if ('serviceWorker' in navigator) {
-    try {
-      navigator.serviceWorker.register('./sw.js', { scope: './' })
-        .then(function(reg) { reg.update(); })
-        .catch(function() {});
-    } catch(e) {}
+
+  function selecionar(nome,inp,box){
+    inp.value=nome;
+    inp.dispatchEvent(new Event('input',{bubbles:true}));
+    fechar(box);
   }
-  var n='',d='',h=new Date().toDateString();
-  try{n=localStorage.getItem('cm_n')||'';d=localStorage.getItem('cm_d')||'';}catch(e){}
-  if(n&&d===h){
-    document.getElementById('mot').value=n;
-    document.getElementById('nL').textContent=n;
-    document.getElementById('telaBV').style.display='none';
-    // Testa conectividade real antes de sincronizar
-    testarConectividade(function(ok) { if (ok) setTimeout(sincronizarPendentes, 500); });
+
+  function fechar(box){box.style.display='none';box.innerHTML='';}
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',init);
   }else{
-    document.getElementById('telaBV').style.display='flex';
-    // Busca nomes: online=servidor+cache, offline=somente cache
-    carregarMotoristas(function() {
-      setTimeout(sincronizarPendentes, 2000);
-    });
-    setTimeout(function(){document.getElementById('bi').focus();},200);
+    init();
   }
-};
+})();
+
 </script>
+
 </body>
+
 </html>
