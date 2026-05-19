@@ -3743,6 +3743,320 @@ body::after{
   z-index:2 !important;
 }
 
+
+/* =========================================================
+   CAELMO — AJUSTE SUAVE DO BACKGROUND
+   Quadrados e tom azulado mais claros/sutis
+   ========================================================= */
+
+html,
+body{
+  background:#FBFDFF !important;
+}
+
+body::before{
+  background:
+    radial-gradient(circle at 10% 20%, rgba(191,219,254,.20), transparent 36%),
+    radial-gradient(circle at 42% 68%, rgba(224,242,254,.14), transparent 36%),
+    radial-gradient(circle at 90% 18%, rgba(240,253,244,.12), transparent 30%),
+    linear-gradient(180deg,#FBFDFF 0%,#F5F9FF 54%,#FBFFFC 100%) !important;
+  opacity:1 !important;
+}
+
+body::after{
+  opacity:.74 !important;
+  filter:brightness(1.05) saturate(.82) !important;
+}
+
+#telaBV{
+  background:
+    radial-gradient(circle at 10% 20%, rgba(191,219,254,.18), transparent 36%),
+    radial-gradient(circle at 88% 18%, rgba(240,253,244,.12), transparent 30%),
+    linear-gradient(180deg,#FBFDFF 0%,#F5F9FF 56%,#FBFFFC 100%) !important;
+}
+
+#telaBV::before{
+  opacity:.80 !important;
+  filter:brightness(1.05) saturate(.82) !important;
+}
+
+#telaBV::after{
+  background:
+    linear-gradient(90deg, rgba(251,253,255,.04) 0%, rgba(251,253,255,.22) 48%, rgba(251,253,255,.78) 100%),
+    radial-gradient(circle at 15% 16%, rgba(96,165,250,.05), transparent 30%),
+    radial-gradient(circle at 84% 72%, rgba(74,222,128,.04), transparent 34%) !important;
+}
+
+
+/* =========================================================
+   CAELMO — FUNDO MAIS SUTIL, ESTÁTICO E RESPONSIVO CONSISTENTE
+   - Quadrados bem leves
+   - Sem animação para não parecer travando
+   - Mesmo layout/informações no desktop e mobile, com adaptação natural
+   ========================================================= */
+
+/* Fundo mais limpo e suave */
+html,
+body{
+  background:#FCFDFF !important;
+}
+
+/* Base azulada mais clara */
+body::before{
+  background:
+    radial-gradient(circle at 10% 20%, rgba(191,219,254,.13), transparent 38%),
+    radial-gradient(circle at 42% 68%, rgba(224,242,254,.10), transparent 38%),
+    radial-gradient(circle at 90% 18%, rgba(240,253,244,.08), transparent 30%),
+    linear-gradient(180deg,#FCFDFF 0%,#F8FBFF 54%,#FCFFFD 100%) !important;
+  opacity:1 !important;
+  animation:none !important;
+  transform:none !important;
+}
+
+/* Quadrados: aparência de fluxo, mas estáticos */
+body::after{
+  opacity:.38 !important;
+  filter:brightness(1.12) saturate(.55) !important;
+  animation:none !important;
+  transform:none !important;
+  background-position:-64px -48px !important;
+  mask-image:linear-gradient(90deg,
+    rgba(0,0,0,.62) 0%,
+    rgba(0,0,0,.50) 30%,
+    rgba(0,0,0,.28) 56%,
+    rgba(0,0,0,.10) 80%,
+    transparent 100%) !important;
+  -webkit-mask-image:linear-gradient(90deg,
+    rgba(0,0,0,.62) 0%,
+    rgba(0,0,0,.50) 30%,
+    rgba(0,0,0,.28) 56%,
+    rgba(0,0,0,.10) 80%,
+    transparent 100%) !important;
+}
+
+/* Tela inicial: fundo opaco, sutil e sem movimento */
+#telaBV{
+  background:
+    radial-gradient(circle at 10% 20%, rgba(191,219,254,.12), transparent 38%),
+    radial-gradient(circle at 88% 18%, rgba(240,253,244,.08), transparent 30%),
+    linear-gradient(180deg,#FCFDFF 0%,#F8FBFF 56%,#FCFFFD 100%) !important;
+  opacity:1 !important;
+  isolation:isolate !important;
+}
+
+#telaBV::before{
+  opacity:.42 !important;
+  filter:brightness(1.12) saturate(.55) !important;
+  animation:none !important;
+  transform:none !important;
+  background-position:-68px -50px !important;
+}
+
+#telaBV::after{
+  background:
+    linear-gradient(90deg, rgba(252,253,255,.02) 0%, rgba(252,253,255,.20) 48%, rgba(252,253,255,.82) 100%),
+    radial-gradient(circle at 15% 16%, rgba(96,165,250,.035), transparent 30%),
+    radial-gradient(circle at 84% 72%, rgba(74,222,128,.03), transparent 34%) !important;
+  animation:none !important;
+  transform:none !important;
+}
+
+/* Mantém todas as informações visíveis e a ordem do layout igual */
+.container{
+  width:100% !important;
+  max-width:480px !important;
+  margin-left:auto !important;
+  margin-right:auto !important;
+}
+
+.header,
+.form-body,
+.bv-card,
+#telaBV > div:first-child{
+  width:100% !important;
+}
+
+.notas-row{
+  display:grid !important;
+  grid-template-columns:1fr 1fr !important;
+}
+
+.status-opts{
+  display:grid !important;
+  grid-template-columns:1fr 1fr !important;
+}
+
+.grid{
+  display:grid !important;
+  grid-template-columns:repeat(3,1fr) !important;
+}
+
+.success-card{
+  width:100% !important;
+  max-width:440px !important;
+}
+
+/* Responsivo mantendo o mesmo conteúdo e padrão visual */
+@media (max-width:640px){
+  body{
+    padding-top:44px !important;
+  }
+
+  #statusBar{
+    height:44px !important;
+    padding:0 12px !important;
+  }
+
+  .container{
+    max-width:480px !important;
+    width:100% !important;
+    padding:12px !important;
+  }
+
+  .header{
+    border-radius:24px 24px 0 0 !important;
+    padding:20px 16px !important;
+  }
+
+  .form-body{
+    border-radius:0 0 24px 24px !important;
+    padding:18px 14px !important;
+  }
+
+  .logo-row{
+    gap:10px !important;
+  }
+
+  .logo-circ{
+    width:56px !important;
+    height:56px !important;
+  }
+
+  .h-nome{
+    font-size:21px !important;
+    letter-spacing:2px !important;
+  }
+
+  .h-sub,
+  .h-titulo{
+    display:block !important;
+  }
+
+  .badge-resp,
+  .field,
+  .notas-row,
+  .foto-section,
+  .status-section,
+  .btn-reg{
+    width:100% !important;
+  }
+
+  .notas-row{
+    grid-template-columns:1fr 1fr !important;
+    gap:8px !important;
+  }
+
+  .status-opts{
+    grid-template-columns:1fr 1fr !important;
+    gap:8px !important;
+  }
+
+  .status-opt label{
+    min-height:50px !important;
+    font-size:12px !important;
+    padding:9px 8px !important;
+  }
+
+  .grid{
+    grid-template-columns:repeat(3,1fr) !important;
+    gap:7px !important;
+  }
+
+  .field input,
+  .field textarea,
+  .bv-input{
+    font-size:16px !important;
+  }
+
+  #telaBV{
+    top:44px !important;
+    height:calc(100% - 44px) !important;
+    padding:28px 16px 22px !important;
+    overflow-y:auto !important;
+  }
+
+  #telaBV > div:first-child,
+  .bv-card{
+    max-width:360px !important;
+  }
+
+  #bvHora{
+    font-size:clamp(52px,18vw,74px) !important;
+    line-height:1 !important;
+  }
+
+  .bv-logo{
+    width:112px !important;
+    height:112px !important;
+  }
+
+  .success{
+    padding:30px 16px 24px !important;
+    border-radius:24px !important;
+  }
+
+  #sA.success h2{
+    white-space:nowrap !important;
+    font-size:clamp(20px,6.2vw,28px) !important;
+    line-height:1.08 !important;
+  }
+
+  #sA.success .mn{
+    font-size:clamp(15px,4.4vw,19px) !important;
+  }
+
+  .success-card{
+    max-width:100% !important;
+  }
+}
+
+@media (max-width:380px){
+  .container{
+    padding:10px !important;
+  }
+
+  .form-body{
+    padding:16px 12px !important;
+  }
+
+  .notas-row,
+  .status-opts{
+    grid-template-columns:1fr 1fr !important;
+    gap:6px !important;
+  }
+
+  .foto-label{
+    padding:.78rem .35rem !important;
+  }
+
+  .foto-label .ft{
+    font-size:10px !important;
+  }
+
+  .foto-label .fs{
+    font-size:9px !important;
+  }
+
+  .status-opt label{
+    font-size:11px !important;
+    gap:5px !important;
+  }
+
+  #sA.success h2{
+    font-size:clamp(18px,6vw,24px) !important;
+  }
+}
+
 </style>
 
 </head>
