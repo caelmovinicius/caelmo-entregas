@@ -1,8 +1,8 @@
 // ════════════════════════════════════════════════════════════════════
-// CAELMO Entregas — Service Worker v6
+// CAELMO Entregas — Service Worker v12
 // ════════════════════════════════════════════════════════════════════
 
-var CACHE = 'caelmo-v11';
+var CACHE = 'caelmo-v12';
 
 var SHELL = [
   './',
@@ -27,15 +27,20 @@ self.addEventListener('activate', function(e) {
     caches.keys().then(function(keys) {
       return Promise.all(
         keys.map(function(k) {
-          if (k !== CACHE) {
-            return caches.delete(k);
-          }
+          if (k !== CACHE) return caches.delete(k);
         })
       );
+    }).then(function() {
+      return self.clients.claim();
+    }).then(function() {
+      // Avisa todas as abas abertas para recarregar e pegar o novo HTML
+      return self.clients.matchAll({ type: 'window' }).then(function(clients) {
+        clients.forEach(function(client) {
+          client.postMessage({ type: 'SW_UPDATED' });
+        });
+      });
     })
   );
-
-  return self.clients.claim();
 });
 
 // FETCH
