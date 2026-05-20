@@ -2,7 +2,7 @@
 // CAELMO Entregas — Service Worker v6
 // ════════════════════════════════════════════════════════════════════
 
-var CACHE = 'caelmo-v9';
+var CACHE = 'caelmo-v11';
 
 var SHELL = [
   './',
