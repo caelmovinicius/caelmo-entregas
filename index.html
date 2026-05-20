@@ -4151,7 +4151,7 @@ body::after{
     </div>
   </div>
 
-  <div style="margin-top:1.5rem;text-align:center;font-size:10px;color:#94a3b8;letter-spacing:.08em;font-weight:500;opacity:.7">v14</div>
+  <div style="margin-top:1.5rem;text-align:center;font-size:10px;color:#94a3b8;letter-spacing:.08em;font-weight:500;opacity:.7">v15</div>
 
 </div>
 
@@ -5540,6 +5540,8 @@ function enviar(){
 
 function reset(){
 
+  _enviando = false;
+
   ['cam','ped','cli','obs'].forEach(function(id){document.getElementById(id).value='';});
 
   // Limpa status da entrega
@@ -5677,7 +5679,16 @@ window.onload=function(){
     // Recarrega automaticamente quando o SW atualiza — sem precisar fechar/abrir
     navigator.serviceWorker.addEventListener('message', function(e) {
       if (e.data && e.data.type === 'SW_UPDATED') {
-        window.location.reload();
+        // Só recarrega se o motorista NÃO está no meio de um registro
+        var telaBV = document.getElementById('telaBV');
+        var bvVisivel = telaBV && telaBV.style.display !== 'none';
+        var camVal = document.getElementById('cam');
+        var formVazio = !camVal || !camVal.value.trim();
+        if (bvVisivel || formVazio) {
+          window.location.reload();
+        }
+        // Se estiver com formulário preenchido, ignora o reload agora.
+        // Na próxima abertura do app já carrega a versão nova.
       }
     });
 
