@@ -1156,7 +1156,33 @@ body::after{
   body{padding-top:44px !important;}#statusBar{height:44px !important;padding:0 14px !important;border-radius:0 !important;}#statusDate{font-size:11px;letter-spacing:.06em}#statusTxt{font-size:12px !important;}#statusDot{width:8px !important;height:8px !important;}
   #telaBV{top:44px !important;height:calc(100% - 44px) !important;padding:32px 16px 22px !important;}
   #telaBV>div:first-child>div:first-child{font-size:11px !important;letter-spacing:.28em !important;}#bvData{font-size:14px !important;}#bvHora{font-size:clamp(58px,20vw,82px) !important;}
-  .bv-logo{width:112px !important;height:112px !important;}.bv-titulo{font-size:27px !important;}.bv-card{max-width:100% !important;}.bv-metrics{grid-template-columns:repeat(3,1fr);gap:12px;max-width:100%}.bv-metric{justify-content:flex-start;flex-direction:column;align-items:center;text-align:center;gap:6px}.bv-recent{display:block;}.container{padding-top:18px !important;}
+  .bv-logo{width:112px !important;height:112px !important;}
+  .bv-titulo{font-size:27px !important;}
+  .bv-card{max-width:100% !important;}
+  .container{padding-top:18px !important;}
+
+  /* ── Métricas: cards modernos com gradiente e ícone colorido ── */
+  .bv-metrics{grid-template-columns:repeat(3,1fr);gap:10px;max-width:100%;margin:18px auto 16px}
+  .bv-metric{flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:7px;padding:16px 6px 14px;background:#fff;border-radius:18px;border:none;box-shadow:0 4px 20px rgba(37,99,235,.10),0 1px 4px rgba(0,0,0,.04);position:relative;overflow:hidden}
+  .bv-metric::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:18px 18px 0 0}
+  .bv-metric:nth-child(1)::before{background:linear-gradient(90deg,#22c55e,#16a34a)}
+  .bv-metric:nth-child(2)::before{background:linear-gradient(90deg,#f59e0b,#d97706)}
+  .bv-metric:nth-child(3)::before{background:linear-gradient(90deg,#2563eb,#1d4ed8)}
+  .bv-metric strong{font-size:10px;font-weight:900;letter-spacing:.08em;color:#0f172a}
+  .bv-metric small{font-size:9px;color:#64748b;line-height:1.35;font-weight:500}
+  .metric-ico{width:40px;height:40px;font-size:18px;box-shadow:none}
+  .metric-ico.shield{background:linear-gradient(135deg,#dcfce7,#bbf7d0);color:#16a34a}
+  .metric-ico.bolt{background:linear-gradient(135deg,#fef3c7,#fde68a);color:#d97706}
+  .metric-ico.cloud{background:linear-gradient(135deg,#dbeafe,#bfdbfe);color:#2563eb}
+
+  /* ── Últimos acessos: cards horizontais lado a lado ── */
+  .bv-recent{display:block;padding:14px 16px}
+  .recent-head button{display:none}
+  .recent-list{grid-template-columns:repeat(3,1fr);gap:8px}
+  .recent-item{flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:5px;padding:12px 6px;background:#fff;border-radius:14px;border:none;box-shadow:0 2px 12px rgba(37,99,235,.08),0 1px 3px rgba(0,0,0,.04);min-width:0}
+  .recent-item strong{font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;color:#0f172a}
+  .recent-item small{font-size:10px;color:#64748b;font-weight:500}
+  .recent-avatar{width:36px;height:36px;font-size:14px;background:linear-gradient(135deg,#dbeafe,#bfdbfe);color:#2563eb;font-weight:900;box-shadow:none}
 }
 
 
@@ -4128,7 +4154,7 @@ body::after{
     </div>
   </div>
 
-  <div style="margin-top:1.5rem;text-align:center;font-size:10px;color:#94a3b8;letter-spacing:.08em;font-weight:500;opacity:.7">v9</div>
+  <div style="margin-top:1.5rem;text-align:center;font-size:10px;color:#94a3b8;letter-spacing:.08em;font-weight:500;opacity:.7">v11</div>
 
 </div>
 
