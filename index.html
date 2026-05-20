@@ -4154,7 +4154,7 @@ body::after{
     </div>
   </div>
 
-  <div style="margin-top:1.5rem;text-align:center;font-size:10px;color:#94a3b8;letter-spacing:.08em;font-weight:500;opacity:.7">v11</div>
+  <div style="margin-top:1.5rem;text-align:center;font-size:10px;color:#94a3b8;letter-spacing:.08em;font-weight:500;opacity:.7">v12</div>
 
 </div>
 
@@ -5676,6 +5676,13 @@ window.onload=function(){
         .catch(function() {});
 
     } catch(e) {}
+
+    // Recarrega automaticamente quando o SW atualiza — sem precisar fechar/abrir
+    navigator.serviceWorker.addEventListener('message', function(e) {
+      if (e.data && e.data.type === 'SW_UPDATED') {
+        window.location.reload();
+      }
+    });
 
   }
 
