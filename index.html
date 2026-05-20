@@ -4356,6 +4356,8 @@ function criarAbort(ms) {
 
 var _conectividadeOk = false;
 
+var _enviando = false; // FIX: impede sincronizador de reenviar entrega em andamento
+
 function testarConectividade(cb) {
 
   if (!navigator.onLine) { _conectividadeOk = false; cb(false); return; }
@@ -4380,7 +4382,7 @@ function enviarViaFetch(dados, successCb, failCb) {
 
   }
 
-  var ctrl = criarAbort(30000);
+  var ctrl = criarAbort(60000);
 
   fetch(APP_URL, {
 
@@ -4878,7 +4880,7 @@ function atualizarStatusBar() {
 
 function sincronizarPendentes() {
 
-  if (!navigator.onLine || _sincronizando) return;
+  if (!navigator.onLine || _sincronizando || _enviando) return;
 
   if (!_conectividadeOk) {
 
@@ -5378,6 +5380,8 @@ function enviar(){
 
   };
 
+  _enviando = true; // FIX: bloqueia sincronizador enquanto este envio está em curso
+
   comp(nf,function(nfc){
 
     var vs=document.getElementById('iNV').src;
@@ -5406,6 +5410,8 @@ function enviar(){
 
             // ── MODO OFFLINE: confirma localmente ──
 
+            _enviando = false;
+
             som();
 
             document.getElementById('lA').style.display='none';
@@ -5433,6 +5439,8 @@ function enviar(){
 
           var _showSucesso = function() {
 
+            _enviando = false;
+
             if(idLocal) marcarEntregaSincronizada(idLocal);
 
             atualizarStatusBar(); som();
@@ -5449,6 +5457,8 @@ function enviar(){
           };
 
           var _showSalvoLocal = function() {
+
+            _enviando = false;
 
             atualizarStatusBar(); som();
 
