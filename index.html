@@ -1161,28 +1161,26 @@ body::after{
   .bv-card{max-width:100% !important;}
   .container{padding-top:18px !important;}
 
-  /* ── Métricas: cards modernos com gradiente e ícone colorido ── */
+  /* ── Métricas: neon gradient ultra moderno ── */
   .bv-metrics{grid-template-columns:repeat(3,1fr);gap:10px;max-width:100%;margin:18px auto 16px}
-  .bv-metric{flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:7px;padding:16px 6px 14px;background:#fff;border-radius:18px;border:none;box-shadow:0 4px 20px rgba(37,99,235,.10),0 1px 4px rgba(0,0,0,.04);position:relative;overflow:hidden}
-  .bv-metric::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:18px 18px 0 0}
-  .bv-metric:nth-child(1)::before{background:linear-gradient(90deg,#22c55e,#16a34a)}
-  .bv-metric:nth-child(2)::before{background:linear-gradient(90deg,#f59e0b,#d97706)}
-  .bv-metric:nth-child(3)::before{background:linear-gradient(90deg,#2563eb,#1d4ed8)}
-  .bv-metric strong{font-size:10px;font-weight:900;letter-spacing:.08em;color:#0f172a}
-  .bv-metric small{font-size:9px;color:#64748b;line-height:1.35;font-weight:500}
-  .metric-ico{width:40px;height:40px;font-size:18px;box-shadow:none}
-  .metric-ico.shield{background:linear-gradient(135deg,#dcfce7,#bbf7d0);color:#16a34a}
-  .metric-ico.bolt{background:linear-gradient(135deg,#fef3c7,#fde68a);color:#d97706}
-  .metric-ico.cloud{background:linear-gradient(135deg,#dbeafe,#bfdbfe);color:#2563eb}
+  .bv-metric{flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:7px;padding:16px 6px 14px;border-radius:20px;border:none;position:relative;overflow:hidden}
+  .bv-metric:nth-child(1){background:linear-gradient(145deg,#064e3b,#059669);box-shadow:0 8px 28px rgba(5,150,105,.55),0 0 0 1px rgba(16,185,129,.25)}
+  .bv-metric:nth-child(2){background:linear-gradient(145deg,#78350f,#d97706);box-shadow:0 8px 28px rgba(217,119,6,.55),0 0 0 1px rgba(245,158,11,.25)}
+  .bv-metric:nth-child(3){background:linear-gradient(145deg,#1e1b4b,#4f46e5);box-shadow:0 8px 28px rgba(79,70,229,.55),0 0 0 1px rgba(129,140,248,.25)}
+  .bv-metric::after{content:'';position:absolute;top:-30px;right:-20px;width:70px;height:70px;border-radius:50%;background:rgba(255,255,255,.06);pointer-events:none}
+  .bv-metric strong{font-size:10px;font-weight:900;letter-spacing:.08em;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.3)}
+  .bv-metric small{font-size:9px;color:rgba(255,255,255,.75);line-height:1.35;font-weight:500}
+  .metric-ico{width:38px;height:38px;font-size:17px;background:rgba(255,255,255,.18);box-shadow:0 0 16px rgba(255,255,255,.15),inset 0 1px 0 rgba(255,255,255,.25)}
+  .metric-ico.shield{color:#fff}.metric-ico.bolt{color:#fff}.metric-ico.cloud{color:#fff}
 
-  /* ── Últimos acessos: cards horizontais lado a lado ── */
+  /* ── Últimos acessos: cards horizontais com nome abreviado ── */
   .bv-recent{display:block;padding:14px 16px}
   .recent-head button{display:none}
   .recent-list{grid-template-columns:repeat(3,1fr);gap:8px}
-  .recent-item{flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:5px;padding:12px 6px;background:#fff;border-radius:14px;border:none;box-shadow:0 2px 12px rgba(37,99,235,.08),0 1px 3px rgba(0,0,0,.04);min-width:0}
-  .recent-item strong{font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;color:#0f172a}
+  .recent-item{flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:5px;padding:12px 6px;background:#fff;border-radius:16px;border:none;box-shadow:0 2px 14px rgba(37,99,235,.09),0 1px 3px rgba(0,0,0,.04);min-width:0;overflow:hidden}
+  .recent-item strong{font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;color:#0f172a;display:block}
   .recent-item small{font-size:10px;color:#64748b;font-weight:500}
-  .recent-avatar{width:36px;height:36px;font-size:14px;background:linear-gradient(135deg,#dbeafe,#bfdbfe);color:#2563eb;font-weight:900;box-shadow:none}
+  .recent-avatar{width:36px;height:36px;font-size:14px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;font-weight:900;box-shadow:0 4px 12px rgba(79,70,229,.35)}
 }
 
 
@@ -4154,7 +4152,7 @@ body::after{
     </div>
   </div>
 
-  <div style="margin-top:1.5rem;text-align:center;font-size:10px;color:#94a3b8;letter-spacing:.08em;font-weight:500;opacity:.7">v12</div>
+  <div style="margin-top:1.5rem;text-align:center;font-size:10px;color:#94a3b8;letter-spacing:.08em;font-weight:500;opacity:.7">v13</div>
 
 </div>
 
@@ -5942,9 +5940,12 @@ window.onload=function(){
   function renderRecentesUX(){
     var box=document.getElementById('recentList');
     if(!box)return;
-    var arr=lerRecentesUX().slice(0,3);
+    var hoje=new Date().toDateString();
+    var arr=lerRecentesUX().filter(function(x){
+      return x&&x.ts&&new Date(x.ts).toDateString()===hoje;
+    }).slice(0,3);
     if(!arr.length){
-      box.innerHTML='<div class="recent-empty">Nenhum acesso registrado ainda</div>';
+      box.innerHTML='<div class="recent-empty">Nenhum acesso hoje ainda</div>';
       return;
     }
     var html='';
@@ -5953,7 +5954,9 @@ window.onload=function(){
       var nome=item.nome||'';
       var hora=item.hora||'--:--';
       var inicial=nome.trim()?nome.trim().charAt(0).toUpperCase():'•';
-      html+='<div class="recent-item"><span class="recent-avatar">'+escUX(inicial)+'</span><div><strong>'+escUX(nome)+'</strong><small>'+escUX(hora)+'</small></div></div>';
+      var nomePartes=nome.trim().split(' ');
+      var nomeExib=nomePartes[0]+(nomePartes.length>1?' '+nomePartes[1].charAt(0)+'.':'');
+      html+='<div class="recent-item"><span class="recent-avatar">'+escUX(inicial)+'</span><div><strong title="'+escUX(nome)+'">'+escUX(nomeExib)+'</strong><small>'+escUX(hora)+'</small></div></div>';
     }
     box.innerHTML=html;
   }
