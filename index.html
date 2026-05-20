@@ -1170,8 +1170,7 @@ body::after{
   .bv-metric::after{content:'';position:absolute;top:-30px;right:-20px;width:70px;height:70px;border-radius:50%;background:rgba(255,255,255,.06);pointer-events:none}
   .bv-metric strong{font-size:10px;font-weight:900;letter-spacing:.08em;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.3)}
   .bv-metric small{font-size:9px;color:rgba(255,255,255,.75);line-height:1.35;font-weight:500}
-  .metric-ico{width:38px;height:38px;font-size:17px;background:rgba(255,255,255,.18);box-shadow:0 0 16px rgba(255,255,255,.15),inset 0 1px 0 rgba(255,255,255,.25)}
-  .metric-ico.shield{color:#fff}.metric-ico.bolt{color:#fff}.metric-ico.cloud{color:#fff}
+  .metric-ico{width:40px;height:40px;font-size:20px;background:rgba(0,0,0,.18);box-shadow:0 0 14px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.15);filter:drop-shadow(0 2px 6px rgba(0,0,0,.25))}
 
   /* ── Últimos acessos: cards horizontais com nome abreviado ── */
   .bv-recent{display:block;padding:14px 16px}
@@ -4140,9 +4139,9 @@ body::after{
   </div>
 
   <div class="bv-metrics" aria-label="benefícios do sistema">
-    <div class="bv-metric"><span class="metric-ico shield">✓</span><div><strong>SEGURO</strong><small>Seus dados protegidos</small></div></div>
+    <div class="bv-metric"><span class="metric-ico shield">✅</span><div><strong>SEGURO</strong><small>Seus dados protegidos</small></div></div>
     <div class="bv-metric"><span class="metric-ico bolt">⚡</span><div><strong>RÁPIDO</strong><small>Acesso em segundos</small></div></div>
-    <div class="bv-metric"><span class="metric-ico cloud">☁</span><div><strong>CONFIÁVEL</strong><small>Sistema 100% estável</small></div></div>
+    <div class="bv-metric"><span class="metric-ico cloud">🌐</span><div><strong>CONFIÁVEL</strong><small>Sistema 100% estável</small></div></div>
   </div>
 
   <div class="bv-recent" aria-label="últimos acessos">
@@ -4152,7 +4151,7 @@ body::after{
     </div>
   </div>
 
-  <div style="margin-top:1.5rem;text-align:center;font-size:10px;color:#94a3b8;letter-spacing:.08em;font-weight:500;opacity:.7">v13</div>
+  <div style="margin-top:1.5rem;text-align:center;font-size:10px;color:#94a3b8;letter-spacing:.08em;font-weight:500;opacity:.7">v14</div>
 
 </div>
 
@@ -5955,7 +5954,15 @@ window.onload=function(){
       var hora=item.hora||'--:--';
       var inicial=nome.trim()?nome.trim().charAt(0).toUpperCase():'•';
       var nomePartes=nome.trim().split(' ');
-      var nomeExib=nomePartes[0]+(nomePartes.length>1?' '+nomePartes[1].charAt(0)+'.':'');
+      var ignorarPrep=['de','da','do','dos','das','e','van','von','di','del'];
+      var sobrenomeInicial='';
+      for(var pi=1;pi<nomePartes.length;pi++){
+        if(ignorarPrep.indexOf(nomePartes[pi].toLowerCase())===-1&&nomePartes[pi].length>1){
+          sobrenomeInicial=nomePartes[pi].charAt(0).toUpperCase();
+          break;
+        }
+      }
+      var nomeExib=nomePartes[0]+(sobrenomeInicial?' '+sobrenomeInicial+'.':'');
       html+='<div class="recent-item"><span class="recent-avatar">'+escUX(inicial)+'</span><div><strong title="'+escUX(nome)+'">'+escUX(nomeExib)+'</strong><small>'+escUX(hora)+'</small></div></div>';
     }
     box.innerHTML=html;
