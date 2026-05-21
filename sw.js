@@ -1,8 +1,10 @@
 // ════════════════════════════════════════════════════════════════════
-// CAELMO Entregas — Service Worker v12
+// CAELMO Entregas — Service Worker v16
+// Bump de versão: força atualização do index.html nos celulares.
+// Mudou apenas a string da versão; comportamento idêntico ao v15.
 // ════════════════════════════════════════════════════════════════════
 
-var CACHE = 'caelmo-v15';
+var CACHE = 'caelmo-v16';
 
 var SHELL = [
   './',
