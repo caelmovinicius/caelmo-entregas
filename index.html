@@ -5944,26 +5944,68 @@ window.onload=function(){
 
       navigator.serviceWorker.register('./sw.js', { scope: './', updateViaCache: 'none' })
 
-        .then(function(reg) { reg.update(); })
+        .then(function(reg) {
+
+          // Verifica atualização imediata no registro
+          reg.update();
+
+          // ── Verificação periódica a cada 5 min ──────────────────
+          // PWAs instalados na tela inicial podem ficar horas sem
+          // checar o SW. Esse intervalo força a verificação enquanto
+          // o app estiver aberto, garantindo atualização rápida.
+          setInterval(function() {
+
+            reg.update().catch(function() {});
+
+          }, 5 * 60 * 1000);
+
+        })
 
         .catch(function() {});
 
     } catch(e) {}
 
-    // Recarrega automaticamente quando o SW atualiza — sem precisar fechar/abrir
+    // ── Verifica quando motorista abre o app (tira do bolso) ────────
+    // visibilitychange dispara toda vez que o app sai do background.
+    // É o gatilho mais confiável para PWA — pega exatamente o momento
+    // em que o motorista vai usar o app.
+    document.addEventListener('visibilitychange', function() {
+
+      if (document.visibilityState !== 'visible') return;
+
+      if (!navigator.serviceWorker.controller) return;
+
+      navigator.serviceWorker.ready.then(function(reg) {
+
+        reg.update().catch(function() {});
+
+      }).catch(function() {});
+
+    });
+
+    // ── Recarrega automaticamente quando o SW atualiza ──────────────
+    // Só recarrega se o motorista NÃO está no meio de um registro.
+    // Se estiver preenchendo o formulário, aguarda a próxima abertura.
     navigator.serviceWorker.addEventListener('message', function(e) {
-      if (e.data && e.data.type === 'SW_UPDATED') {
-        // Só recarrega se o motorista NÃO está no meio de um registro
-        var telaBV = document.getElementById('telaBV');
-        var bvVisivel = telaBV && telaBV.style.display !== 'none';
-        var camVal = document.getElementById('cam');
-        var formVazio = !camVal || !camVal.value.trim();
-        if (bvVisivel || formVazio) {
-          window.location.reload();
-        }
-        // Se estiver com formulário preenchido, ignora o reload agora.
-        // Na próxima abertura do app já carrega a versão nova.
+
+      if (!e.data || e.data.type !== 'SW_UPDATED') return;
+
+      var telaBV = document.getElementById('telaBV');
+
+      var bvVisivel = telaBV && telaBV.style.display !== 'none';
+
+      var camVal = document.getElementById('cam');
+
+      var formVazio = !camVal || !camVal.value.trim();
+
+      if (bvVisivel || formVazio) {
+
+        window.location.reload();
+
       }
+
+      // Formulário preenchido: na próxima abertura já carrega a versão nova.
+
     });
 
   }
