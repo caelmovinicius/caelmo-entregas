@@ -4756,6 +4756,69 @@ function liberarEnvio(idEntrega) {
 
 }
 
+// ─── ID retroativo para entregas legadas ──────────────────────────
+// Entregas que ficaram pendentes no IDB ANTES desta versão não têm
+// idEntrega. Atribuímos um agora e persistimos no IDB, para que
+// retentativas usem SEMPRE o mesmo ID e o servidor possa deduplicar.
+function garantirIdEntregaRetroativo(entry, cb) {
+
+  if (!entry) { cb(null); return; }
+
+  if (entry.idEntrega) { cb(entry.idEntrega); return; }
+
+  var novoId = gerarIdEntrega();
+
+  abrirDB(function(db) {
+
+    if (!db) { cb(novoId); return; } // ainda retorna o ID gerado em RAM
+
+    try {
+
+      var tx = db.transaction(STORE_ENTREGAS, 'readwrite');
+
+      var store = tx.objectStore(STORE_ENTREGAS);
+
+      var req = store.get(entry.id);
+
+      req.onsuccess = function(e) {
+
+        var item = e.target.result;
+
+        if (item && !item.idEntrega) {
+
+          item.idEntrega = novoId;
+
+          store.put(item);
+
+          entry.idEntrega = novoId; // reflete no objeto em memória
+
+        } else if (item && item.idEntrega) {
+
+          // Já tem ID (outra execução atribuiu) — usa o existente
+          entry.idEntrega = item.idEntrega;
+
+          cb(item.idEntrega);
+
+          return;
+
+        }
+
+        cb(novoId);
+
+      };
+
+      req.onerror = function() { cb(novoId); };
+
+    } catch(_) {
+
+      cb(novoId);
+
+    }
+
+  });
+
+}
+
 function salvarEntregaLocal(dados, cb) {
 
   abrirDB(function(db) {
@@ -5097,91 +5160,99 @@ function sincronizarPendentes() {
 
       i++;
 
-      // ─── MUTEX ANTI-CORRIDA ─────────────────────────────────────
-      // Se essa entrega já está sendo enviada por enviar() ou por
-      // outra execução do sincronizador, pula. Será retomada na
-      // próxima rodada.
-      if (entry.idEntrega && !reservarEnvio(entry.idEntrega)) {
+      // ─── Garante idEntrega (retroativo para entregas legadas) ───
+      // Entregas criadas pelo app antigo não têm idEntrega. Aqui
+      // atribuímos um e persistimos no IDB, de forma que retentativas
+      // usem o MESMO ID e o servidor consiga deduplicar.
+      garantirIdEntregaRetroativo(entry, function(idGarantido) {
 
-        proxima();
+        // ─── MUTEX ANTI-CORRIDA ───────────────────────────────────
+        // Se essa entrega já está sendo enviada por enviar() ou por
+        // outra execução do sincronizador, pula. Será retomada na
+        // próxima rodada.
+        if (idGarantido && !reservarEnvio(idGarantido)) {
 
-        return;
+          proxima();
 
-      }
+          return;
 
-      var dados = {
+        }
 
-        idEntrega: entry.idEntrega || '', // viaja ao servidor p/ dedup
+        var dados = {
 
-        motorista: entry.motorista,
+          idEntrega: idGarantido || '', // viaja ao servidor p/ dedup
 
-        caminhao: entry.caminhao,
+          motorista: entry.motorista,
 
-        pedido: entry.pedido,
+          caminhao: entry.caminhao,
 
-        cliente: entry.cliente,
+          pedido: entry.pedido,
 
-        obs: entry.obs,
+          cliente: entry.cliente,
 
-        statusEntrega: entry.statusEntrega || '',
+          obs: entry.obs,
 
-        fotoNotaFrente: entry.fotoNotaFrente,
+          statusEntrega: entry.statusEntrega || '',
 
-        fotoNotaVerso: entry.fotoNotaVerso,
+          fotoNotaFrente: entry.fotoNotaFrente,
 
-        fotosMaterial: entry.fotosMaterial
+          fotoNotaVerso: entry.fotoNotaVerso,
 
-      };
+          fotosMaterial: entry.fotosMaterial
 
-      // Tenta google.script.run (contexto GAS direto).
+        };
 
-      // Se indisponível (SW cache / Capacitor), usa fetch POST.
+        // Tenta google.script.run (contexto GAS direto).
 
-      var _onSuc = function() {
+        // Se indisponível (SW cache / Capacitor), usa fetch POST.
 
-        liberarEnvio(entry.idEntrega);
+        var _onSuc = function() {
 
-        marcarEntregaSincronizada(entry.id);
+          liberarEnvio(idGarantido);
 
-        proxima();
+          marcarEntregaSincronizada(entry.id);
 
-      };
+          proxima();
 
-      var _onFail = function() {
+        };
 
-        liberarEnvio(entry.idEntrega);
+        var _onFail = function() {
 
-        proxima();
+          liberarEnvio(idGarantido);
 
-      };
+          proxima();
 
-      try {
+        };
 
-        if (typeof google !== 'undefined' && google.script && google.script.run) {
+        try {
 
-          google.script.run
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
 
-            .withSuccessHandler(_onSuc)
+            google.script.run
 
-            .withFailureHandler(function() {
+              .withSuccessHandler(_onSuc)
 
-              enviarViaFetch(dados, _onSuc, _onFail);
+              .withFailureHandler(function() {
 
-            })
+                enviarViaFetch(dados, _onSuc, _onFail);
 
-            .processarEntrega(dados);
+              })
 
-        } else {
+              .processarEntrega(dados);
+
+          } else {
+
+            enviarViaFetch(dados, _onSuc, _onFail);
+
+          }
+
+        } catch(e) {
 
           enviarViaFetch(dados, _onSuc, _onFail);
 
         }
 
-      } catch(e) {
-
-        enviarViaFetch(dados, _onSuc, _onFail);
-
-      }
+      });
 
     }
 
