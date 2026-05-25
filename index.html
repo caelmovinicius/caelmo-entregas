@@ -4151,7 +4151,7 @@ body::after{
     </div>
   </div>
 
-  <div style="margin-top:1.5rem;text-align:center;font-size:10px;color:#94a3b8;letter-spacing:.08em;font-weight:500;opacity:.7">v15</div>
+  <div style="margin-top:1.5rem;text-align:center;font-size:10px;color:#94a3b8;letter-spacing:.08em;font-weight:500;opacity:.7">v18</div>
 
 </div>
 
@@ -4301,7 +4301,16 @@ body::after{
 
     </div>
 
-    <div class="loading" id="lA"><div class="spinner"></div><p id="lMsg">Enviando dados e fotos...<br>Por favor aguarde.</p></div>
+    <div class="loading" id="lA">
+      <div class="spinner"></div>
+      <p id="lMsg">Enviando dados e fotos...<br>Por favor aguarde.</p>
+      <div id="lSafe" style="display:none;margin-top:16px;background:#0d3321;border-radius:12px;padding:14px 16px;text-align:left;max-width:320px;margin-left:auto;margin-right:auto">
+        <div style="font-size:22px;margin-bottom:6px">✅</div>
+        <div style="font-size:15px;font-weight:900;color:#4ade80;margin-bottom:6px">ENTREGA JÁ ESTÁ SALVA!</div>
+        <div style="font-size:13px;color:#86efac;line-height:1.6">Pode ficar tranquilo. Mesmo que a internet esteja lenta, sua entrega não vai sumir. Vamos enviar assim que a conexão melhorar.</div>
+      </div>
+      <button id="btnProxima" style="display:none;margin-top:20px;width:100%;max-width:320px;padding:15px;background:#1a56db;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:900;cursor:pointer;-webkit-appearance:none" onclick="liberarParaProximaEntrega()">➕ REGISTRAR PRÓXIMA ENTREGA</button>
+    </div>
 
     <div class="success" id="sA">
 
@@ -4382,6 +4391,8 @@ function criarAbort(ms) {
 var _conectividadeOk = false;
 
 var _enviando = false; // FIX: impede sincronizador de reenviar entrega em andamento
+
+var _seqEnvioTela = 0; // FIX: identifica qual envio "dona" da tela de loading atual
 
 function testarConectividade(cb) {
 
@@ -4756,6 +4767,20 @@ function liberarEnvio(idEntrega) {
 
 }
 
+// ─── Rede de segurança: libera mutex preso há muito tempo ──────────
+// Se algum envio travar e nunca chamar sucesso/falha (caso raríssimo),
+// a reserva ficaria presa e o retry nunca reenviaria. Aqui liberamos
+// qualquer reserva com mais de 90s. O servidor deduplica por idEntrega,
+// então liberar cedo demais nunca causa duplicação na planilha.
+function _limparMutexPresos() {
+  var agora = Date.now();
+  for (var id in _idsEmEnvio) {
+    if (_idsEmEnvio[id] && (agora - _idsEmEnvio[id]) > 90000) {
+      delete _idsEmEnvio[id];
+    }
+  }
+}
+
 // ─── ID retroativo para entregas legadas ──────────────────────────
 // Entregas que ficaram pendentes no IDB ANTES desta versão não têm
 // idEntrega. Atribuímos um agora e persistimos no IDB, para que
@@ -4821,50 +4846,67 @@ function garantirIdEntregaRetroativo(entry, cb) {
 
 function salvarEntregaLocal(dados, cb) {
 
+  // idEntrega: usa o que veio em "dados" se já existir, senão gera novo
+  var idEntrega = dados.idEntrega || gerarIdEntrega();
+
   abrirDB(function(db) {
 
-    if (!db) { cb(null, null); return; }
+    if (!db) {
+      // IndexedDB não abriu — tenta backup em localStorage
+      var okBkp = backupLocalStorage(dados);
+      cb(okBkp ? ('ls_' + idEntrega) : null, idEntrega);
+      return;
+    }
 
-    var tx = db.transaction(STORE_ENTREGAS, 'readwrite');
+    try {
 
-    var store = tx.objectStore(STORE_ENTREGAS);
+      var tx = db.transaction(STORE_ENTREGAS, 'readwrite');
 
-    // idEntrega: usa o que veio em "dados" se já existir, senão gera novo
-    var idEntrega = dados.idEntrega || gerarIdEntrega();
+      var store = tx.objectStore(STORE_ENTREGAS);
 
-    var registro = {
+      var registro = {
 
-      idEntrega: idEntrega,
+        idEntrega: idEntrega,
 
-      status: 'pendente',
+        status: 'pendente',
 
-      timestamp: new Date().toISOString(),
+        timestamp: new Date().toISOString(),
 
-      motorista: dados.motorista,
+        motorista: dados.motorista,
 
-      caminhao: dados.caminhao,
+        caminhao: dados.caminhao,
 
-      pedido: dados.pedido,
+        pedido: dados.pedido,
 
-      cliente: dados.cliente,
+        cliente: dados.cliente,
 
-      obs: dados.obs || '',
+        obs: dados.obs || '',
 
-      statusEntrega: dados.statusEntrega || '',
+        statusEntrega: dados.statusEntrega || '',
 
-      fotoNotaFrente: dados.fotoNotaFrente,
+        fotoNotaFrente: dados.fotoNotaFrente,
 
-      fotoNotaVerso: dados.fotoNotaVerso || '',
+        fotoNotaVerso: dados.fotoNotaVerso || '',
 
-      fotosMaterial: dados.fotosMaterial || []
+        fotosMaterial: dados.fotosMaterial || []
 
-    };
+      };
 
-    var req = store.add(registro);
+      var req = store.add(registro);
 
-    req.onsuccess = function(e) { cb(e.target.result, idEntrega); };
+      req.onsuccess = function(e) { cb(e.target.result, idEntrega); };
 
-    req.onerror = function() { cb(null, idEntrega); };
+      req.onerror = function() {
+        // Falha ao gravar no IndexedDB — tenta backup em localStorage
+        var okBkp = backupLocalStorage(dados);
+        cb(okBkp ? ('ls_' + idEntrega) : null, idEntrega);
+      };
+
+    } catch(err) {
+      // Exceção na transação — tenta backup em localStorage
+      var okBkp2 = backupLocalStorage(dados);
+      cb(okBkp2 ? ('ls_' + idEntrega) : null, idEntrega);
+    }
 
   });
 
@@ -4906,11 +4948,72 @@ function marcarEntregaSincronizada(id) {
 
 }
 
+// ═══════════════════════════════════════════════════════════
+// BACKUP DE EMERGÊNCIA EM localStorage
+// ───────────────────────────────────────────────────────────
+// O IndexedDB é o armazenamento PRINCIPAL (suporta centenas de MB).
+// Mas se ele falhar (raro: modo anônimo, cota, erro de transação),
+// numa área rural sem sinal a entrega ficaria sem para onde ir.
+// Aqui guardamos uma cópia no localStorage como rede de segurança.
+// O localStorage tem ~5MB, então cabe várias entregas comprimidas.
+// Cada entrega tem idEntrega único → o servidor deduplica no envio.
+// ═══════════════════════════════════════════════════════════
+var LS_BACKUP_PREFIX = 'caelmo_bkp_';
+
+function backupLocalStorage(dados) {
+  try {
+    var id = dados.idEntrega || gerarIdEntrega();
+    var registro = {
+      idEntrega: id,
+      status: 'pendente',
+      timestamp: new Date().toISOString(),
+      motorista: dados.motorista,
+      caminhao: dados.caminhao,
+      pedido: dados.pedido,
+      cliente: dados.cliente,
+      obs: dados.obs || '',
+      statusEntrega: dados.statusEntrega || '',
+      fotoNotaFrente: dados.fotoNotaFrente,
+      fotoNotaVerso: dados.fotoNotaVerso || '',
+      fotosMaterial: dados.fotosMaterial || []
+    };
+    localStorage.setItem(LS_BACKUP_PREFIX + id, JSON.stringify(registro));
+    return true;
+  } catch(e) {
+    // localStorage também falhou ou está cheio
+    return false;
+  }
+}
+
+function removerBackupLocalStorage(idEntrega) {
+  if (!idEntrega) return;
+  try { localStorage.removeItem(LS_BACKUP_PREFIX + idEntrega); } catch(e) {}
+}
+
+function listarBackupsLocalStorage() {
+  var lista = [];
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf(LS_BACKUP_PREFIX) === 0) {
+        try {
+          var obj = JSON.parse(localStorage.getItem(k));
+          if (obj && obj.status === 'pendente') lista.push(obj);
+        } catch(_) {}
+      }
+    }
+  } catch(e) {}
+  return lista;
+}
+
 function buscarPendentes(cb) {
+
+  // Backups de emergência no localStorage (marcados com _fonteLS)
+  var backupsLS = listarBackupsLocalStorage().map(function(o){ o._fonteLS = true; return o; });
 
   abrirDB(function(db) {
 
-    if (!db) { cb([]); return; }
+    if (!db) { cb(backupsLS); return; }
 
     var tx = db.transaction(STORE_ENTREGAS, 'readonly');
 
@@ -4920,9 +5023,16 @@ function buscarPendentes(cb) {
 
     var req = idx.getAll('pendente');
 
-    req.onsuccess = function(e) { cb(e.target.result || []); };
+    req.onsuccess = function(e) {
+      var doIDB = e.target.result || [];
+      // Evita duplicar: se um idEntrega já está no IDB, ignora o backup LS dele
+      var idsIDB = {};
+      doIDB.forEach(function(it){ if(it.idEntrega) idsIDB[it.idEntrega] = true; });
+      var soLS = backupsLS.filter(function(b){ return !b.idEntrega || !idsIDB[b.idEntrega]; });
+      cb(doIDB.concat(soLS));
+    };
 
-    req.onerror = function() { cb([]); };
+    req.onerror = function() { cb(backupsLS); };
 
   });
 
@@ -4930,9 +5040,12 @@ function buscarPendentes(cb) {
 
 function contarPendentes(cb) {
 
+  // Conta também os backups de emergência no localStorage
+  var nLS = listarBackupsLocalStorage().length;
+
   abrirDB(function(db) {
 
-    if (!db) { cb(0); return; }
+    if (!db) { cb(nLS); return; }
 
     var tx = db.transaction(STORE_ENTREGAS, 'readonly');
 
@@ -4942,9 +5055,23 @@ function contarPendentes(cb) {
 
     var req = idx.count('pendente');
 
-    req.onsuccess = function(e) { cb(e.target.result || 0); };
+    req.onsuccess = function(e) {
+      var nIDB = e.target.result || 0;
+      // Backups LS de entregas que JÁ estão no IDB não devem contar duas vezes.
+      // Como é raro coexistirem, somamos de forma conservadora mas evitamos
+      // dupla contagem checando os idEntrega.
+      if (nLS === 0) { cb(nIDB); return; }
+      var reqAll = idx.getAll('pendente');
+      reqAll.onsuccess = function(ev) {
+        var idsIDB = {};
+        (ev.target.result || []).forEach(function(it){ if(it.idEntrega) idsIDB[it.idEntrega]=true; });
+        var extras = listarBackupsLocalStorage().filter(function(b){ return !b.idEntrega || !idsIDB[b.idEntrega]; }).length;
+        cb(nIDB + extras);
+      };
+      reqAll.onerror = function(){ cb(nIDB + nLS); };
+    };
 
-    req.onerror = function() { cb(0); };
+    req.onerror = function() { cb(nLS); };
 
   });
 
@@ -5210,7 +5337,10 @@ function sincronizarPendentes() {
 
           liberarEnvio(idGarantido);
 
-          marcarEntregaSincronizada(entry.id);
+          // Remove do IndexedDB (se veio de lá) e do backup localStorage
+          if (entry.id !== undefined && entry.id !== null) marcarEntregaSincronizada(entry.id);
+
+          if (entry._fonteLS || entry.idEntrega) removerBackupLocalStorage(entry.idEntrega);
 
           proxima();
 
@@ -5697,6 +5827,24 @@ function enviar(){
           // mas usamos o retornado para garantir consistência
           var idEntrega = idEntregaSalvo || p.idEntrega;
 
+          // ── REDE DE SEGURANÇA CRÍTICA ──────────────────────────────
+          // Se o IndexedDB FALHOU (idLocal null), a entrega NÃO está
+          // salva localmente. Se ALÉM disso estiver offline, não há para
+          // onde mandar — seria perda real de dado. Nesse caso NÃO
+          // fingimos sucesso: mantemos os dados na tela e avisamos o
+          // motorista para não fechar o app e tentar de novo.
+          var salvouLocal = (idLocal !== null && idLocal !== undefined);
+
+          if (!salvouLocal && !navigator.onLine) {
+            _enviando = false;
+            liberarEnvio(idEntrega);
+            document.getElementById('lA').style.display='none';
+            document.getElementById('fA').style.display='block';
+            document.getElementById('bE').disabled=false;
+            erro('NÃO FOI POSSÍVEL SALVAR e você está sem internet. NÃO feche o app. Procure um local com sinal e toque em REGISTRAR ENTREGA novamente. Seus dados e fotos continuam preenchidos na tela.');
+            return;
+          }
+
           atualizarStatusBar();
 
           if(!navigator.onLine){
@@ -5728,19 +5876,57 @@ function enviar(){
 
           document.getElementById('lMsg').innerHTML='Enviando dados e fotos...<br>Por favor aguarde.';
 
+          // ── TRAVA DE TELA ──────────────────────────────────────────────
+          // Cada envio recebe um número. Se o motorista tocar em "PRÓXIMA
+          // ENTREGA", o número muda. Os callbacks do envio antigo então só
+          // fazem trabalho de bastidores (liberar mutex, marcar sincronizado)
+          // SEM mexer na tela da nova entrega.
+          _seqEnvioTela++;
+          var _meuSeq = _seqEnvioTela;
+          function _souAtual() { return _meuSeq === _seqEnvioTela; }
+
+          // Após 3s mostra card verde: "ENTREGA JÁ ESTÁ SALVA"
+          // SÓ se o dado realmente foi salvo no celular. Se o IndexedDB
+          // falhou, não damos garantia falsa — o envio precisa concluir.
+          var _timerSafe = setTimeout(function() {
+            if (_souAtual() && salvouLocal) document.getElementById('lSafe').style.display='block';
+          }, 3000);
+          // Após 12s desbloqueia botão para próxima entrega (idem: só se salvo)
+          var _timerProxima = setTimeout(function() {
+            if (_souAtual() && salvouLocal) document.getElementById('btnProxima').style.display='block';
+          }, 12000);
+          function _limparTimers() {
+            clearTimeout(_timerSafe); clearTimeout(_timerProxima);
+            if (_souAtual()) {
+              document.getElementById('lSafe').style.display='none';
+              document.getElementById('btnProxima').style.display='none';
+            }
+          }
+
           // Tenta enviar imediatamente. Se falhar, os dados já estão no IDB
 
           // e serão sincronizados automaticamente quando a internet voltar.
 
           var _showSucesso = function() {
 
+            _limparTimers();
+
             _enviando = false;
 
             liberarEnvio(idEntrega);
 
-            if(idLocal) marcarEntregaSincronizada(idLocal);
+            // marcarEntregaSincronizada só aceita id numérico do IndexedDB.
+            // Backups localStorage têm idLocal no formato "ls_...".
+            if(idLocal && typeof idLocal === 'number') marcarEntregaSincronizada(idLocal);
 
-            atualizarStatusBar(); som();
+            removerBackupLocalStorage(idEntrega);
+
+            atualizarStatusBar();
+
+            // Se o motorista já avançou para outra entrega, não mexe na tela
+            if (!_souAtual()) return;
+
+            som();
 
             document.getElementById('lA').style.display='none';
 
@@ -5755,11 +5941,28 @@ function enviar(){
 
           var _showSalvoLocal = function() {
 
+            _limparTimers();
+
             _enviando = false;
 
             liberarEnvio(idEntrega);
 
-            atualizarStatusBar(); som();
+            atualizarStatusBar();
+
+            // Se o motorista já avançou para outra entrega, não mexe na tela
+            if (!_souAtual()) return;
+
+            // CASO CRÍTICO: não salvou local E o envio falhou. O dado não
+            // está em lugar nenhum. NÃO mentir dizendo "sincronizaremos".
+            if (!salvouLocal) {
+              document.getElementById('lA').style.display='none';
+              document.getElementById('fA').style.display='block';
+              document.getElementById('bE').disabled=false;
+              erro('O envio falhou e não foi possível salvar no celular. NÃO feche o app. Vá para um local com sinal melhor e toque em REGISTRAR ENTREGA novamente. Seus dados continuam na tela.');
+              return;
+            }
+
+            som();
 
             document.getElementById('lA').style.display='none';
 
@@ -5839,6 +6042,37 @@ function reset(){
   document.getElementById('bE').disabled=false;
 
 }
+
+// ── Libera formulário para próxima entrega sem perder a que está sendo enviada ──
+// O dado já está salvo no IndexedDB — a sincronização acontece em background.
+function liberarParaProximaEntrega(){
+  // Invalida a tela do envio anterior: quando ele terminar, não mexe mais aqui
+  _seqEnvioTela++;
+  document.getElementById('lSafe').style.display='none';
+  document.getElementById('btnProxima').style.display='none';
+  document.getElementById('lA').style.display='none';
+  document.getElementById('lMsg').innerHTML='Enviando dados e fotos...<br>Por favor aguarde.';
+  _enviando = false;
+  ['cam','ped','cli','obs'].forEach(function(id){document.getElementById(id).value='';});
+  var stChecked=document.querySelector('input[name="stEntrega"]:checked');
+  if(stChecked) stChecked.checked=false;
+  document.getElementById('obsWrap').classList.remove('obs-required');
+  fRem('NF');fRem('NV');mats=[];rGrid();
+  document.getElementById('fA').style.display='block';
+  document.getElementById('bE').disabled=false;
+  atualizarStatusBar();
+  testarConectividade(function(ok){ if(ok) setTimeout(sincronizarPendentes,500); });
+}
+
+// ── Retry periódico a cada 30s: garante sincronização mesmo sem evento online ──
+setInterval(function(){
+  _limparMutexPresos();
+  if(!_sincronizando && !_enviando && navigator.onLine){
+    contarPendentes(function(n){
+      if(n>0) testarConectividade(function(ok){ if(ok) sincronizarPendentes(); });
+    });
+  }
+},30000);
 
 function atualizarRelogio(){
 
@@ -6024,7 +6258,18 @@ window.onload=function(){
 
     // Testa conectividade real antes de sincronizar
 
-    testarConectividade(function(ok) { if (ok) setTimeout(sincronizarPendentes, 500); });
+    testarConectividade(function(ok) {
+      if (ok) {
+        contarPendentes(function(n) {
+          if (n > 0) {
+            document.getElementById('pm').innerHTML =
+              '✅ Pode ficar tranquilo!<br><br>Você tem <strong>' + n + ' entrega(s)</strong> salva(s) no celular que ainda não foram enviadas ao servidor.<br><br>Vamos sincronizar agora automaticamente.';
+            document.getElementById('po').style.display='flex';
+          }
+          setTimeout(sincronizarPendentes, 1000);
+        });
+      }
+    });
 
   }else{
 
