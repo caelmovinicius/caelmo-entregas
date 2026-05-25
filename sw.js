@@ -1,10 +1,11 @@
 // ════════════════════════════════════════════════════════════════════
-// CAELMO Entregas — Service Worker v17
+// CAELMO Entregas — Service Worker v18
 // Bump de versão: força atualização do index.html nos celulares.
-// Mudou apenas a string da versão; comportamento idêntico ao v15.
+// v18: melhorias de envio (aviso "salva", botão próxima entrega,
+// retry automático a cada 30s, alerta de pendentes ao recarregar).
 // ════════════════════════════════════════════════════════════════════
 
-var CACHE = 'caelmo-v17';
+var CACHE = 'caelmo-v18';
 
 var SHELL = [
   './',
