@@ -5,7 +5,7 @@
 // retry automático a cada 30s, alerta de pendentes ao recarregar).
 // ════════════════════════════════════════════════════════════════════
 
-var CACHE = 'caelmo-v18';
+var CACHE = 'caelmo-v19';
 
 var SHELL = [
   './',
