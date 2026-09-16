@@ -6769,6 +6769,17 @@ window.onload=function(){
     document.getElementById('ccm-erro-fechar').onclick  = fechar;
   }
 
+  // ── Reset v20: limpa flag incorreta gravada pela versão anterior ──
+  (function resetV20() {
+    try {
+      var RESET_KEY = 'caelmo_cam_reset_v21';
+      if (!localStorage.getItem(RESET_KEY)) {
+        localStorage.removeItem(FLAG_KEY);
+        localStorage.setItem(RESET_KEY, '1');
+      }
+    } catch(e) {}
+  })();
+
   // ── Init ─────────────────────────────────────────────────────────
   function init() {
     detectarReload();
