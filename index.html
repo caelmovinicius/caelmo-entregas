@@ -4203,7 +4203,7 @@ body::after{
   </div>
 
   <div style="margin-top:1.5rem;text-align:center;font-size:10px;color:#94a3b8;letter-spacing:.08em;font-weight:500;opacity:.7">
-    <span id="caelmo-versao" title="v20 — Câmera embutida ativa para todos os celulares —  Rascunho automático: campos e fotos salvos ao abrir câmera&#10;Câmera embutida: ativada automaticamente em celulares com problema de reload&#10;Compressão de fotos na entrada: fotos menores, app mais rápido" style="cursor:default;border-bottom:1px dotted #cbd5e1">v20</span>
+    <span id="caelmo-versao" title="v19 — Rascunho automático: campos e fotos salvos ao abrir câmera&#10;Câmera embutida: ativada automaticamente em celulares com problema de reload&#10;Compressão de fotos na entrada: fotos menores, app mais rápido" style="cursor:default;border-bottom:1px dotted #cbd5e1">v19</span>
     <span id="caelmo-versao-detail" style="display:none;position:fixed;bottom:48px;left:50%;transform:translateX(-50%);background:#1e293b;color:#e2e8f0;font-size:11px;font-weight:600;border-radius:10px;padding:12px 16px;line-height:1.8;white-space:nowrap;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.3);letter-spacing:.04em;text-align:left"></span>
   </div>
 
@@ -6530,14 +6530,47 @@ window.onload=function(){
   var _stream   = null;
   var _cb       = null;
 
-  // ── Câmera embutida ativa para TODOS os dispositivos ────────────
-  // Evita problemas com câmera nativa que abre sem botão de confirmação
-  // ou causa reload da página em celulares Samsung/Xiaomi etc.
-  function flagAtiva() { return true; }
+  // ── Flag de dispositivo ──────────────────────────────────────────
+  function flagAtiva() {
+    try {
+      var raw = localStorage.getItem(FLAG_KEY);
+      if (!raw) return false;
+      var obj = JSON.parse(raw);
+      return obj && obj.exp > Date.now();
+    } catch(e) { return false; }
+  }
 
-  function marcarDevice() {} // mantido para compatibilidade
+  function marcarDevice() {
+    try {
+      localStorage.setItem(FLAG_KEY, JSON.stringify({ exp: Date.now() + 60*24*60*60*1000 }));
+    } catch(e) {}
+  }
 
-  function detectarReload() {} // desativado — câmera embutida é sempre usada
+  // ── Detecção de reload por câmera nativa ────────────────────────
+  // Chamado no init: se há ping salvo dentro do TTL → reload confirmado
+  function detectarReload() {
+    try {
+      var raw = sessionStorage.getItem(PING_KEY);
+      if (!raw) return;
+      var ping = JSON.parse(raw);
+      sessionStorage.removeItem(PING_KEY);
+      if (!ping || !ping.ts) return;
+      var idade = Date.now() - ping.ts;
+      if (idade > PING_TTL) return; // passou dos 25s → não foi a câmera
+      // Confirmado: câmera nativa causou reload neste device
+      marcarDevice();
+      setTimeout(function() {
+        var av = document.createElement('div');
+        av.style.cssText='position:fixed;top:38px;left:0;right:0;z-index:99992;background:#7C3AED;color:#fff;text-align:center;font-size:11px;font-weight:700;padding:9px 14px;letter-spacing:.05em;box-shadow:0 2px 8px rgba(0,0,0,.22)';
+        av.textContent = '📷 Câmera adaptada para este celular — funcionará normalmente agora';
+        document.body.appendChild(av);
+        setTimeout(function(){
+          av.style.transition='opacity .5s';av.style.opacity='0';
+          setTimeout(function(){if(av.parentNode)av.parentNode.removeChild(av);},500);
+        }, 5000);
+      }, 700);
+    } catch(e) {}
+  }
 
   // ── Ping: salvo ao tocar num botão de foto (antes da câmera abrir) ─
   function salvarPing(id) {
