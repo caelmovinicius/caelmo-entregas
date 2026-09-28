@@ -1,11 +1,13 @@
 // ════════════════════════════════════════════════════════════════════
-// CAELMO Entregas — Service Worker v18
+// CAELMO Entregas — Service Worker v20
 // Bump de versão: força atualização do index.html nos celulares.
 // v18: melhorias de envio (aviso "salva", botão próxima entrega,
 // retry automático a cada 30s, alerta de pendentes ao recarregar).
+// v20: acompanha o app v30 (câmera embutida corrigida, rascunho completo).
+//      Instalação agora baixa o HTML direto da rede (ignora cache HTTP).
 // ════════════════════════════════════════════════════════════════════
 
-var CACHE = 'caelmo-v19';
+var CACHE = 'caelmo-v20';
 
 var SHELL = [
   './',
@@ -19,7 +21,7 @@ self.addEventListener('install', function(e) {
 
   e.waitUntil(
     caches.open(CACHE).then(function(cache) {
-      return cache.addAll(SHELL);
+      return cache.addAll(SHELL.map(function(u) { return new Request(u, { cache: 'reload' }); }));
     })
   );
 });
