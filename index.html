@@ -5363,6 +5363,8 @@ function sincronizarPendentes() {
 
           idEntrega: idGarantido || '', // viaja ao servidor p/ dedup
 
+          registradoEm: entry.timestamp || '',   // ← LINHA NOVA
+
           motorista: entry.motorista,
 
           caminhao: entry.caminhao,
