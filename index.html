@@ -4202,8 +4202,8 @@ body::after{
     </div>
   </div>
 
-  <div style="margin-top:1.5rem;text-align:center;font-size:12px;color:#64748b;letter-spacing:.06em;font-weight:700;opacity:1">
-    <span id="caelmo-versao" title="Versão 30 — Câmera embutida corrigida (botão Usar foto), rascunho completo, detecção de reload melhorada" style="cursor:default;border-bottom:1px dotted #cbd5e1">Versão 30</span>
+  <div style="margin-top:1.5rem;text-align:center;font-size:10px;color:#94a3b8;letter-spacing:.08em;font-weight:500;opacity:.7">
+    <span id="caelmo-versao" title="v21 — Câmera embutida ativa para todos os celulares —  Rascunho automático: campos e fotos salvos ao abrir câmera&#10;Câmera embutida: ativada automaticamente em celulares com problema de reload&#10;Compressão de fotos na entrada: fotos menores, app mais rápido" style="cursor:default;border-bottom:1px dotted #cbd5e1">v21</span>
     <span id="caelmo-versao-detail" style="display:none;position:fixed;bottom:48px;left:50%;transform:translateX(-50%);background:#1e293b;color:#e2e8f0;font-size:11px;font-weight:600;border-radius:10px;padding:12px 16px;line-height:1.8;white-space:nowrap;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.3);letter-spacing:.04em;text-align:left"></span>
   </div>
 
@@ -5359,11 +5359,17 @@ function sincronizarPendentes() {
 
         }
 
+        var _dtReg = entry.timestamp ? new Date(entry.timestamp) : null;
+        var _regOk = _dtReg && !isNaN(_dtReg.getTime());
+        var _p2 = function(n){ return String(n).padStart(2,'0'); };
+        
         var dados = {
 
           idEntrega: idGarantido || '', // viaja ao servidor p/ dedup
 
-          registradoEm: entry.timestamp || '',   // ← LINHA NOVA
+          dataRegistro: _regOk ? _p2(_dtReg.getDate())+'/'+_p2(_dtReg.getMonth()+1)+'/'+_dtReg.getFullYear() : '',
+          
+          horaRegistro: _regOk ? _p2(_dtReg.getHours())+':'+_p2(_dtReg.getMinutes())+':'+_p2(_dtReg.getSeconds()) : '',
 
           motorista: entry.motorista,
 
@@ -6321,10 +6327,8 @@ window.onload=function(){
       var camVal = document.getElementById('cam');
 
       var formVazio = !camVal || !camVal.value.trim();
-      var temFotoAgora = !!(window.mats && window.mats.length) || ['iNF','iNV'].some(function(id){ var i=document.getElementById(id); return i && i.src && i.src.indexOf('data:')===0; });
-      var camAberta = !!(document.getElementById('ccm') && document.getElementById('ccm').classList.contains('ativo'));
 
-      if ((bvVisivel || formVazio) && !temFotoAgora && !camAberta) {
+      if (bvVisivel || formVazio) {
 
         window.location.reload();
 
@@ -6412,7 +6416,7 @@ window.onload=function(){
   var FNF  = 'caelmo_fnf_v2';
   var FNV  = 'caelmo_fnv_v2';
   var FMAT = 'caelmo_fmat_v2';
-  var CAMPOS = ['cam','ped','cli','obs'];
+  var CAMPOS = ['cli','nPed','nNF','nVol','obs'];
   var _t = null;
 
   function salvar() {
@@ -6428,18 +6432,15 @@ window.onload=function(){
         });
         var rc = document.querySelector('input[name="stEntrega"]:checked');
         if (rc) d.st = rc.value;
-        var nf = document.getElementById('iNF');
-        var nv = document.getElementById('iNV');
-        var temNF  = !!(nf && nf.src && nf.src.indexOf('data:') === 0);
-        var temNV  = !!(nv && nv.src && nv.src.indexOf('data:') === 0);
-        var temMat = !!(window.mats && window.mats.length);
-        var temDado = temNF || temNV || temMat || Object.keys(d).some(function(k){return d[k];});
+        var temDado = Object.keys(d).some(function(k){return d[k];});
         if (!temDado) return;
         sessionStorage.setItem(DK, JSON.stringify(d));
-        // Fotos (v30: também salva se só há foto; remove do rascunho a foto que foi apagada)
-        if (temNF) { try{sessionStorage.setItem(FNF, nf.src);}catch(e){} } else { sessionStorage.removeItem(FNF); }
-        if (temNV) { try{sessionStorage.setItem(FNV, nv.src);}catch(e){} } else { sessionStorage.removeItem(FNV); }
-        if (temMat) { try{sessionStorage.setItem(FMAT, JSON.stringify(window.mats));}catch(e){} } else { sessionStorage.removeItem(FMAT); }
+        // Fotos
+        var nf = document.getElementById('iNF');
+        if (nf && nf.src && nf.src.indexOf('data:') === 0) { try{sessionStorage.setItem(FNF, nf.src);}catch(e){} }
+        var nv = document.getElementById('iNV');
+        if (nv && nv.src && nv.src.indexOf('data:') === 0) { try{sessionStorage.setItem(FNV, nv.src);}catch(e){} }
+        if (window.mats && window.mats.length) { try{sessionStorage.setItem(FMAT, JSON.stringify(window.mats));}catch(e){} }
       } catch(e) {}
     }, 80);
   }
@@ -6532,7 +6533,7 @@ window.onload=function(){
 (function() {
   var FLAG_KEY  = 'caelmo_cam_embutida_v2'; // localStorage, expira em 60 dias
   var PING_KEY  = 'caelmo_cam_ping_v2';     // sessionStorage: { id, ts }
-  var PING_TTL  = 180000; // ms (v30: 3 min) — tirar a foto na câmera nativa leva mais de 25s
+  var PING_TTL  = 25000; // ms — janela de detecção (reload acidental leva mais)
 
   var _stream   = null;
   var _cb       = null;
@@ -6592,9 +6593,15 @@ window.onload=function(){
         var m = (inp.getAttribute('onchange') || '').match(/'([A-Z]+)'/);
         salvarPing(m ? m[1] : 'MAT');
       });
-      // v30: se a foto voltou sem recarregar a página, não houve problema → limpa o ping
-      inp.addEventListener('change', limparPing);
     });
+    // Botão de material
+    var bA = document.getElementById('bA');
+    if (bA) {
+      var inp = bA.querySelector('input[type="file"]');
+      if (inp) {
+        inp.addEventListener('click', function() { salvarPing('MAT'); });
+      }
+    }
   }
 
   // ── Substitui botões de foto pelo modal embutido ─────────────────
@@ -6691,7 +6698,7 @@ window.onload=function(){
   function modoCaptura() {
     document.getElementById('ccm-video').style.display = 'block';
     document.getElementById('ccm-prev').style.display  = 'none';
-    document.getElementById('ccm-disparar').style.display = 'inline-block';
+    document.getElementById('ccm-disparar').style.display = '';
     document.getElementById('ccm-usar').style.display    = 'none';
     document.getElementById('ccm-refazer').style.display = 'none';
   }
@@ -6702,14 +6709,13 @@ window.onload=function(){
     document.getElementById('ccm-video').style.display   = 'none';
     p.style.display                                       = 'block';
     document.getElementById('ccm-disparar').style.display = 'none';
-    // v30: valor explícito. Antes era '' e isso caía no display:none do CSS (#ccm-usar / #ccm-refazer)
-    document.getElementById('ccm-usar').style.display    = 'inline-block';
-    document.getElementById('ccm-refazer').style.display = 'inline-block';
+    document.getElementById('ccm-usar').style.display    = '';
+    document.getElementById('ccm-refazer').style.display = '';
   }
 
   function mostrarErro(txt, comGaleria) {
     document.getElementById('ccm-erro-txt').textContent = txt;
-    document.getElementById('ccm-erro-galeria').style.display = comGaleria ? 'inline-block' : 'none';
+    document.getElementById('ccm-erro-galeria').style.display = comGaleria ? '' : 'none';
     document.getElementById('ccm-erro').classList.add('vis');
   }
 
@@ -6720,8 +6726,7 @@ window.onload=function(){
   function capturar() {
     var v = document.getElementById('ccm-video');
     var c = document.getElementById('ccm-canvas');
-    if (!v.videoWidth) return '';
-    var w = v.videoWidth, h = v.videoHeight;
+    var w = v.videoWidth || 1280, h = v.videoHeight || 960;
     var max = 1200;
     if (w > max || h > max) {
       if (w >= h) { h = Math.round(h*max/w); w = max; }
@@ -6761,13 +6766,12 @@ window.onload=function(){
   // ── Wiring dos botões ────────────────────────────────────────────
   function instalarBotoesModal() {
     document.getElementById('ccm-cancelar').onclick  = fechar;
-    document.getElementById('ccm-disparar').onclick  = function() { var url=capturar(); if(!url) return; pararStream(); modoPreview(url); };
+    document.getElementById('ccm-disparar').onclick  = function() { var url=capturar(); pararStream(); modoPreview(url); };
     document.getElementById('ccm-refazer').onclick   = function() { modoCaptura(); iniciarCamera(); };
     document.getElementById('ccm-usar').onclick      = function() {
       var url = document.getElementById('ccm-prev').src;
-      var cb = _cb;
       fechar();
-      if (cb && url && url.indexOf('data:image') === 0) cb(url);
+      if (_cb && url) _cb(url);
     };
     document.getElementById('ccm-erro-galeria').onclick = function() { fechar(); abrirGaleria(); };
     document.getElementById('ccm-erro-fechar').onclick  = fechar;
@@ -6799,6 +6803,243 @@ window.onload=function(){
   else init();
 
 })();
+//
+// Problema: em alguns celulares (Samsung, dispositivos com pouca RAM),
+// ao abrir a câmera o browser mata a aba em background para liberar
+// memória. Quando o motorista confirma a foto e volta, a página
+// recarrega do zero, perdendo tudo que estava preenchido.
+//
+// Solução: salvar o estado do formulário no sessionStorage sempre que
+// qualquer campo muda, e restaurar automaticamente ao recarregar.
+// As fotos (base64) são salvas separadamente pois são pesadas.
+//
+// Não afeta offline, IndexedDB, envio, autocomplete ou outros módulos.
+// ════════════════════════════════════════════════════════════════════
+(function() {
+  var DRAFT_KEY    = 'caelmo_rascunho_v1';
+  var FOTO_NF_KEY  = 'caelmo_foto_nf_v1';
+  var FOTO_NV_KEY  = 'caelmo_foto_nv_v1';
+  var FOTO_MAT_KEY = 'caelmo_foto_mat_v1';
+
+  // IDs de todos os campos de texto/select/radio do formulário
+  var CAMPOS_TEXTO = ['cli', 'nPed', 'nNF', 'nVol', 'obs'];
+  var CAMPO_STATUS = 'stEntrega'; // radio buttons com name="stEntrega"
+
+  var _salvando = false;
+
+  // ── Salvar rascunho ────────────────────────────────────────────
+  function salvarRascunho() {
+    if (_salvando) return;
+    _salvando = true;
+    setTimeout(function() { _salvando = false; }, 100);
+
+    try {
+      var dados = {};
+
+      // Campos de texto
+      CAMPOS_TEXTO.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) dados[id] = el.value || '';
+      });
+
+      // Status (radio)
+      var radios = document.querySelectorAll('input[name="' + CAMPO_STATUS + '"]:checked');
+      if (radios.length) dados[CAMPO_STATUS] = radios[0].value;
+
+      // Só salva se estiver no formulário (não na tela de boas-vindas)
+      var telaBV = document.getElementById('telaBV');
+      var noFormulario = !telaBV || telaBV.style.display === 'none';
+      if (!noFormulario) return;
+
+      // Verifica se tem alguma coisa preenchida
+      var temDados = Object.keys(dados).some(function(k) { return dados[k]; });
+      if (!temDados) return;
+
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(dados));
+
+      // Salva fotos das notas
+      var iNF = document.getElementById('iNF');
+      if (iNF && iNF.src && iNF.src.indexOf('data:') === 0) {
+        try { sessionStorage.setItem(FOTO_NF_KEY, iNF.src); } catch(e) {}
+      }
+      var iNV = document.getElementById('iNV');
+      if (iNV && iNV.src && iNV.src.indexOf('data:') === 0) {
+        try { sessionStorage.setItem(FOTO_NV_KEY, iNV.src); } catch(e) {}
+      }
+
+      // Salva fotos do material (array global mats)
+      if (window.mats && window.mats.length) {
+        try { sessionStorage.setItem(FOTO_MAT_KEY, JSON.stringify(window.mats)); } catch(e) {}
+      }
+
+    } catch(e) {}
+  }
+
+  // ── Limpar rascunho (chamado após envio bem-sucedido) ──────────
+  function limparRascunho() {
+    try {
+      sessionStorage.removeItem(DRAFT_KEY);
+      sessionStorage.removeItem(FOTO_NF_KEY);
+      sessionStorage.removeItem(FOTO_NV_KEY);
+      sessionStorage.removeItem(FOTO_MAT_KEY);
+    } catch(e) {}
+  }
+
+  // ── Restaurar rascunho ─────────────────────────────────────────
+  function restaurarRascunho() {
+    try {
+      var raw = sessionStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+
+      var dados = JSON.parse(raw);
+      if (!dados) return;
+
+      // Verifica se temos o campo do motorista já preenchido
+      // (o módulo principal já preenche via localStorage cm_n)
+      var mot = document.getElementById('mot');
+      if (!mot || !mot.value) return; // Motorista não identificado, não restaura
+
+      // Preenche campos de texto
+      var algumRestaurado = false;
+      CAMPOS_TEXTO.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el && dados[id]) {
+          el.value = dados[id];
+          algumRestaurado = true;
+        }
+      });
+
+      // Preenche status (radio)
+      if (dados[CAMPO_STATUS]) {
+        var radio = document.querySelector(
+          'input[name="' + CAMPO_STATUS + '"][value="' + dados[CAMPO_STATUS] + '"]'
+        );
+        if (radio) {
+          radio.checked = true;
+          // Dispara o evento change para acionar o aviso de observações obrigatórias
+          var evt = document.createEvent('Event');
+          evt.initEvent('change', true, true);
+          radio.dispatchEvent(evt);
+          algumRestaurado = true;
+        }
+      }
+
+      // Restaura foto da nota (frente)
+      var nfSrc = sessionStorage.getItem(FOTO_NF_KEY);
+      if (nfSrc) {
+        var iNF = document.getElementById('iNF');
+        var pNF = document.getElementById('pNF');
+        if (iNF && pNF) {
+          iNF.src = nfSrc;
+          pNF.style.display = 'block';
+          algumRestaurado = true;
+        }
+      }
+
+      // Restaura foto da nota (verso)
+      var nvSrc = sessionStorage.getItem(FOTO_NV_KEY);
+      if (nvSrc) {
+        var iNV = document.getElementById('iNV');
+        var pNV = document.getElementById('pNV');
+        if (iNV && pNV) {
+          iNV.src = nvSrc;
+          pNV.style.display = 'block';
+          algumRestaurado = true;
+        }
+      }
+
+      // Restaura fotos do material
+      var matRaw = sessionStorage.getItem(FOTO_MAT_KEY);
+      if (matRaw && window.mats !== undefined) {
+        var matsRestaurados = JSON.parse(matRaw);
+        if (matsRestaurados && matsRestaurados.length) {
+          window.mats = matsRestaurados;
+          if (typeof window.rGrid === 'function') window.rGrid();
+          algumRestaurado = true;
+        }
+      }
+
+      if (algumRestaurado) {
+        // Aviso discreto no topo do formulário
+        var aviso = document.createElement('div');
+        aviso.id = 'caelmo-aviso-rascunho';
+        aviso.style.cssText = [
+          'position:fixed',
+          'top:38px',
+          'left:0',
+          'right:0',
+          'z-index:99990',
+          'background:#1D4ED8',
+          'color:#fff',
+          'text-align:center',
+          'font-size:12px',
+          'font-weight:700',
+          'padding:8px 14px',
+          'letter-spacing:.06em',
+          'box-shadow:0 2px 8px rgba(0,0,0,.18)'
+        ].join(';');
+        aviso.textContent = '✅ FORMULÁRIO RESTAURADO — seus dados foram recuperados automaticamente';
+        document.body.appendChild(aviso);
+        setTimeout(function() {
+          if (aviso && aviso.parentNode) {
+            aviso.style.transition = 'opacity .5s';
+            aviso.style.opacity = '0';
+            setTimeout(function() {
+              if (aviso.parentNode) aviso.parentNode.removeChild(aviso);
+            }, 500);
+          }
+        }, 4000);
+      }
+
+    } catch(e) {}
+  }
+
+  // ── Instalar listeners de salvamento ──────────────────────────
+  function instalarListeners() {
+    // Salva ao mudar qualquer input/textarea/select
+    document.addEventListener('input',  salvarRascunho, true);
+    document.addEventListener('change', salvarRascunho, true);
+
+    // Salva quando sai da aba (câmera abre em outro app)
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'hidden') salvarRascunho();
+    });
+
+    // Salva quando a página vai ser destruída
+    window.addEventListener('pagehide', salvarRascunho);
+    window.addEventListener('beforeunload', salvarRascunho);
+
+    // Limpa rascunho quando envio for bem-sucedido
+    // Intercepta a função global "novaEntrega" (botão de próxima entrega)
+    // e o moment em que a tela de sucesso aparece
+    var sA = document.getElementById('sA');
+    if (sA && window.MutationObserver) {
+      new MutationObserver(function() {
+        if (sA.style.display && sA.style.display !== 'none') {
+          limparRascunho();
+        }
+      }).observe(sA, { attributes: true, attributeFilter: ['style'] });
+    }
+  }
+
+  // ── Inicializar ───────────────────────────────────────────────
+  function init() {
+    instalarListeners();
+
+    // Aguarda um tick para o módulo principal preencher o nome do motorista
+    // e só então tenta restaurar o rascunho
+    setTimeout(restaurarRascunho, 350);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    // window.onload já rodou — espera o módulo principal terminar
+    setTimeout(init, 100);
+  }
+
+})();
+
 
 // ── CAELMO Autocomplete de Clientes ──
 (function(){
@@ -7110,12 +7351,6 @@ window.onload=function(){
 // CAELMO — tooltip de versão (toque no número discreto da tela inicial)
 (function(){
   var LOG = [
-    '🆕 v30 — corrigido: botão "Usar foto" da',
-    '   câmera embutida não aparecia',
-    '🆕 v30 — rascunho salva caminhão e pedido,',
-    '   e fotos mesmo antes de digitar algo',
-    '🆕 v30 — detecção de reload da câmera nativa',
-    '   mais tolerante (3 min em vez de 25 s)',
     '📋 Rascunho automático — campos e fotos',
     '   salvos ao abrir câmera, restaurados',
     '   automaticamente se a página recarregar',
