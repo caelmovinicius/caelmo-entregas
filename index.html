@@ -5473,12 +5473,10 @@ function syncManual() {
 window.addEventListener('online', function() {
 
   atualizarStatusBar();
+  
+  _conectividadeOk = true;
 
-  testarConectividade(function(ok) {
-
-    if (ok) setTimeout(sincronizarPendentes, 1000);
-
-  });
+  setTimeout(sincronizarPendentes, 500);
 
 });
 
@@ -5488,9 +5486,27 @@ window.addEventListener('offline', function() {
 
 });
 
-// Atualiza barra a cada 10s
+// Atualiza barra a cada 10s e tenta sincronizar se tiver pendentes
 
-setInterval(atualizarStatusBar, 10000);
+setInterval(function() {
+
+  atualizarStatusBar();
+
+  if (navigator.onLine && !_sincronizando && !_enviando) {
+
+    buscarPendentes(function(pendentes) {
+
+      if (pendentes && pendentes.length > 0) {
+
+        sincronizarPendentes();
+
+      }
+
+    });
+
+  }
+
+}, 10000);
 
 // ═══════════════════════════════════════════════════════════
 
